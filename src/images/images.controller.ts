@@ -27,7 +27,10 @@ export class ImagesController {
     @Req() req: Request,
     @Res() res: Response,
   ): Promise<void> {
-    const { fileName } = params;
+    // Wildcard params return an array in path-to-regexp v8, join segments into a path string
+    const fileName = Array.isArray(params.fileName)
+      ? params.fileName.join('/')
+      : params.fileName;
     const { size } = query;
     const ifNoneMatch = req.headers['if-none-match'] as string | undefined;
 
@@ -80,6 +83,10 @@ export class ImagesController {
 
   @Delete('*fileName')
   async deleteFile(@Param() params: DeleteImageParamsDto): Promise<void> {
-    return this.imagesService.deleteFile(params.fileName);
+    // Wildcard params return an array in path-to-regexp v8, join segments into a path string
+    const fileName = Array.isArray(params.fileName)
+      ? params.fileName.join('/')
+      : params.fileName;
+    return this.imagesService.deleteFile(fileName);
   }
 }

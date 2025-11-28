@@ -24,7 +24,9 @@ let ImagesController = ImagesController_1 = class ImagesController {
         this.logger = new common_1.Logger(ImagesController_1.name);
     }
     async getFile(params, query, req, res) {
-        const { fileName } = params;
+        const fileName = Array.isArray(params.fileName)
+            ? params.fileName.join('/')
+            : params.fileName;
         const { size } = query;
         const ifNoneMatch = req.headers['if-none-match'];
         try {
@@ -68,7 +70,10 @@ let ImagesController = ImagesController_1 = class ImagesController {
         }
     }
     async deleteFile(params) {
-        return this.imagesService.deleteFile(params.fileName);
+        const fileName = Array.isArray(params.fileName)
+            ? params.fileName.join('/')
+            : params.fileName;
+        return this.imagesService.deleteFile(fileName);
     }
 };
 exports.ImagesController = ImagesController;
