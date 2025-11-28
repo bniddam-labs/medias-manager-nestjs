@@ -68,10 +68,7 @@ export class ImagesService {
    * @returns ETag string
    */
   generateETag(fileName: string, lastModified: Date, size: number): string {
-    const hash = crypto
-      .createHash('md5')
-      .update(`${fileName}-${lastModified.getTime()}-${size}`)
-      .digest('hex');
+    const hash = crypto.createHash('md5').update(`${fileName}-${lastModified.getTime()}-${size}`).digest('hex');
     return `"${hash}"`;
   }
 
@@ -201,10 +198,7 @@ export class ImagesService {
    */
   async getFileStream(fileName: string): Promise<Readable> {
     try {
-      const fileStream = (await this.minioService.client.getObject(
-        this.getBucketName(),
-        fileName,
-      )) as Readable;
+      const fileStream = (await this.minioService.client.getObject(this.getBucketName(), fileName)) as Readable;
       return fileStream;
     } catch (error) {
       throw new NotFoundException(`File with name ${fileName} not found`);

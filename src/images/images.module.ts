@@ -3,11 +3,7 @@ import { MinioModule } from 'nestjs-minio-client';
 import { IMAGES_MODULE_OPTIONS } from './images.constants';
 import { ImagesController } from './images.controller';
 import { ImagesService } from './images.service';
-import {
-  ImagesModuleAsyncOptions,
-  ImagesModuleOptions,
-  ImagesModuleOptionsFactory,
-} from './interfaces/images-module-options.interface';
+import { ImagesModuleAsyncOptions, ImagesModuleOptions, ImagesModuleOptionsFactory } from './interfaces/images-module-options.interface';
 
 @Module({})
 export class ImagesModule {
@@ -92,8 +88,7 @@ export class ImagesModule {
     if (options.useExisting) {
       return {
         provide: IMAGES_MODULE_OPTIONS,
-        useFactory: async (optionsFactory: ImagesModuleOptionsFactory) =>
-          await optionsFactory.createImagesModuleOptions(),
+        useFactory: async (optionsFactory: ImagesModuleOptionsFactory) => await optionsFactory.createImagesModuleOptions(),
         inject: [options.useExisting],
       };
     }
@@ -101,8 +96,7 @@ export class ImagesModule {
     if (options.useClass) {
       return {
         provide: IMAGES_MODULE_OPTIONS,
-        useFactory: async (optionsFactory: ImagesModuleOptionsFactory) =>
-          await optionsFactory.createImagesModuleOptions(),
+        useFactory: async (optionsFactory: ImagesModuleOptionsFactory) => await optionsFactory.createImagesModuleOptions(),
         inject: [options.useClass],
       };
     }
@@ -110,10 +104,7 @@ export class ImagesModule {
     throw new Error('Invalid ImagesModule configuration');
   }
 
-  private static async createModuleOptions(
-    options: ImagesModuleAsyncOptions,
-    ...args: any[]
-  ): Promise<ImagesModuleOptions> {
+  private static async createModuleOptions(options: ImagesModuleAsyncOptions, ...args: any[]): Promise<ImagesModuleOptions> {
     if (options.useFactory) {
       return await options.useFactory(...args);
     }

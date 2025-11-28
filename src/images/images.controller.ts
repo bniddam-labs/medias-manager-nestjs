@@ -1,14 +1,4 @@
-import {
-  Controller,
-  Delete,
-  Get,
-  InternalServerErrorException,
-  Logger,
-  Param,
-  Query,
-  Req,
-  Res,
-} from '@nestjs/common';
+import { Controller, Delete, Get, InternalServerErrorException, Logger, Param, Query, Req, Res } from '@nestjs/common';
 import { Request, Response } from 'express';
 import { DeleteImageParamsDto } from './dto/delete-image.dto';
 import { GetImageParamsDto, GetImageQueryDto } from './dto/get-image.dto';
@@ -21,16 +11,9 @@ export class ImagesController {
   constructor(private readonly imagesService: ImagesService) {}
 
   @Get('*fileName')
-  async getFile(
-    @Param() params: GetImageParamsDto,
-    @Query() query: GetImageQueryDto,
-    @Req() req: Request,
-    @Res() res: Response,
-  ): Promise<void> {
+  async getFile(@Param() params: GetImageParamsDto, @Query() query: GetImageQueryDto, @Req() req: Request, @Res() res: Response): Promise<void> {
     // Wildcard params return an array in path-to-regexp v8, join segments into a path string
-    const fileName = Array.isArray(params.fileName)
-      ? params.fileName.join('/')
-      : params.fileName;
+    const fileName = Array.isArray(params.fileName) ? params.fileName.join('/') : params.fileName;
     const { size } = query;
     const ifNoneMatch = req.headers['if-none-match'] as string | undefined;
 
@@ -84,9 +67,7 @@ export class ImagesController {
   @Delete('*fileName')
   async deleteFile(@Param() params: DeleteImageParamsDto): Promise<void> {
     // Wildcard params return an array in path-to-regexp v8, join segments into a path string
-    const fileName = Array.isArray(params.fileName)
-      ? params.fileName.join('/')
-      : params.fileName;
+    const fileName = Array.isArray(params.fileName) ? params.fileName.join('/') : params.fileName;
     return this.imagesService.deleteFile(fileName);
   }
 }

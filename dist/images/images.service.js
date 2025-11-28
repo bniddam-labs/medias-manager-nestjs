@@ -83,10 +83,7 @@ let ImagesService = class ImagesService {
         }
     }
     generateETag(fileName, lastModified, size) {
-        const hash = crypto
-            .createHash('md5')
-            .update(`${fileName}-${lastModified.getTime()}-${size}`)
-            .digest('hex');
+        const hash = crypto.createHash('md5').update(`${fileName}-${lastModified.getTime()}-${size}`).digest('hex');
         return `"${hash}"`;
     }
     generateETagFromBuffer(buffer) {

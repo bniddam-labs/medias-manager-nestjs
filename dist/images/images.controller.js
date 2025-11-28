@@ -24,9 +24,7 @@ let ImagesController = ImagesController_1 = class ImagesController {
         this.logger = new common_1.Logger(ImagesController_1.name);
     }
     async getFile(params, query, req, res) {
-        const fileName = Array.isArray(params.fileName)
-            ? params.fileName.join('/')
-            : params.fileName;
+        const fileName = Array.isArray(params.fileName) ? params.fileName.join('/') : params.fileName;
         const { size } = query;
         const ifNoneMatch = req.headers['if-none-match'];
         try {
@@ -70,9 +68,7 @@ let ImagesController = ImagesController_1 = class ImagesController {
         }
     }
     async deleteFile(params) {
-        const fileName = Array.isArray(params.fileName)
-            ? params.fileName.join('/')
-            : params.fileName;
+        const fileName = Array.isArray(params.fileName) ? params.fileName.join('/') : params.fileName;
         return this.imagesService.deleteFile(fileName);
     }
 };
@@ -84,8 +80,7 @@ __decorate([
     __param(2, (0, common_1.Req)()),
     __param(3, (0, common_1.Res)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [get_image_dto_1.GetImageParamsDto,
-        get_image_dto_1.GetImageQueryDto, Object, Object]),
+    __metadata("design:paramtypes", [get_image_dto_1.GetImageParamsDto, get_image_dto_1.GetImageQueryDto, Object, Object]),
     __metadata("design:returntype", Promise)
 ], ImagesController.prototype, "getFile", null);
 __decorate([

@@ -67,12 +67,7 @@ describe('ImagesController', () => {
           notModified: false,
         });
 
-        await controller.getFile(
-          { fileName: 'test.png' },
-          {},
-          mockRequest as Request,
-          mockResponse as Response,
-        );
+        await controller.getFile({ fileName: 'test.png' }, {}, mockRequest as Request, mockResponse as Response);
 
         expect(mockResponse.setHeader).toHaveBeenCalledWith('Content-Type', 'image/png');
         expect(mockResponse.setHeader).toHaveBeenCalledWith('Content-Length', 1024);
@@ -93,12 +88,7 @@ describe('ImagesController', () => {
           notModified: true,
         });
 
-        await controller.getFile(
-          { fileName: 'test.png' },
-          {},
-          mockRequest as Request,
-          mockResponse as Response,
-        );
+        await controller.getFile({ fileName: 'test.png' }, {}, mockRequest as Request, mockResponse as Response);
 
         expect(mockResponse.status).toHaveBeenCalledWith(304);
         expect(mockResponse.end).toHaveBeenCalled();
@@ -122,18 +112,10 @@ describe('ImagesController', () => {
           notModified: false,
         });
 
-        await controller.getFile(
-          { fileName: 'headshots/user123.png' },
-          {},
-          mockRequest as Request,
-          mockResponse as Response,
-        );
+        await controller.getFile({ fileName: 'headshots/user123.png' }, {}, mockRequest as Request, mockResponse as Response);
 
         expect(imagesService.getImageStream).toHaveBeenCalledWith('headshots/user123.png', undefined);
-        expect(mockResponse.setHeader).toHaveBeenCalledWith(
-          'Content-Disposition',
-          'inline; filename="headshots/user123.png"',
-        );
+        expect(mockResponse.setHeader).toHaveBeenCalledWith('Content-Disposition', 'inline; filename="headshots/user123.png"');
       });
     });
 
@@ -148,12 +130,7 @@ describe('ImagesController', () => {
           notModified: false,
         });
 
-        await controller.getFile(
-          { fileName: 'test.png' },
-          { size: '300' },
-          mockRequest as Request,
-          mockResponse as Response,
-        );
+        await controller.getFile({ fileName: 'test.png' }, { size: '300' }, mockRequest as Request, mockResponse as Response);
 
         expect(imagesService.getResizedImage).toHaveBeenCalledWith('test.png', 300, undefined);
         expect(mockResponse.setHeader).toHaveBeenCalledWith('Content-Type', 'image/png');
@@ -172,12 +149,7 @@ describe('ImagesController', () => {
           notModified: true,
         });
 
-        await controller.getFile(
-          { fileName: 'test.png' },
-          { size: '300' },
-          mockRequest as Request,
-          mockResponse as Response,
-        );
+        await controller.getFile({ fileName: 'test.png' }, { size: '300' }, mockRequest as Request, mockResponse as Response);
 
         expect(mockResponse.status).toHaveBeenCalledWith(304);
         expect(mockResponse.end).toHaveBeenCalled();
@@ -193,12 +165,7 @@ describe('ImagesController', () => {
           notModified: false,
         });
 
-        await controller.getFile(
-          { fileName: 'avatars/2024/user.jpg' },
-          { size: '150' },
-          mockRequest as Request,
-          mockResponse as Response,
-        );
+        await controller.getFile({ fileName: 'avatars/2024/user.jpg' }, { size: '150' }, mockRequest as Request, mockResponse as Response);
 
         expect(imagesService.getResizedImage).toHaveBeenCalledWith('avatars/2024/user.jpg', 150, undefined);
       });
@@ -227,27 +194,13 @@ describe('ImagesController', () => {
     it('should throw InternalServerErrorException on service error for original images', async () => {
       imagesService.getImageStream.mockRejectedValue(new Error('S3 connection failed'));
 
-      await expect(
-        controller.getFile(
-          { fileName: 'test.png' },
-          {},
-          mockRequest as Request,
-          mockResponse as Response,
-        ),
-      ).rejects.toThrow(InternalServerErrorException);
+      await expect(controller.getFile({ fileName: 'test.png' }, {}, mockRequest as Request, mockResponse as Response)).rejects.toThrow(InternalServerErrorException);
     });
 
     it('should throw InternalServerErrorException on service error for resized images', async () => {
       imagesService.getResizedImage.mockRejectedValue(new Error('Sharp processing failed'));
 
-      await expect(
-        controller.getFile(
-          { fileName: 'test.png' },
-          { size: '300' },
-          mockRequest as Request,
-          mockResponse as Response,
-        ),
-      ).rejects.toThrow(InternalServerErrorException);
+      await expect(controller.getFile({ fileName: 'test.png' }, { size: '300' }, mockRequest as Request, mockResponse as Response)).rejects.toThrow(InternalServerErrorException);
     });
 
     it('should handle stream errors gracefully', async () => {
@@ -256,7 +209,7 @@ describe('ImagesController', () => {
           this.push(null);
         },
       });
-      
+
       // Create handlers storage
       const handlers: Record<string, Function> = {};
       mockStream.pipe = jest.fn().mockReturnValue(mockStream);
@@ -274,12 +227,7 @@ describe('ImagesController', () => {
         notModified: false,
       });
 
-      await controller.getFile(
-        { fileName: 'test.png' },
-        {},
-        mockRequest as Request,
-        mockResponse as Response,
-      );
+      await controller.getFile({ fileName: 'test.png' }, {}, mockRequest as Request, mockResponse as Response);
 
       // Verify error handler was registered
       expect(mockStream.on).toHaveBeenCalledWith('error', expect.any(Function));
@@ -305,12 +253,7 @@ describe('ImagesController', () => {
         notModified: false,
       });
 
-      await controller.getFile(
-        { fileName: 'test.png' },
-        {},
-        mockRequest as Request,
-        mockResponse as Response,
-      );
+      await controller.getFile({ fileName: 'test.png' }, {}, mockRequest as Request, mockResponse as Response);
 
       expect(imagesService.getImageStream).toHaveBeenCalledWith('test.png', '"etag123"');
     });
@@ -325,12 +268,7 @@ describe('ImagesController', () => {
         notModified: false,
       });
 
-      await controller.getFile(
-        { fileName: 'test.png' },
-        { size: '200' },
-        mockRequest as Request,
-        mockResponse as Response,
-      );
+      await controller.getFile({ fileName: 'test.png' }, { size: '200' }, mockRequest as Request, mockResponse as Response);
 
       expect(imagesService.getResizedImage).toHaveBeenCalledWith('test.png', 200, '"etag456"');
     });

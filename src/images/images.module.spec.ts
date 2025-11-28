@@ -93,9 +93,7 @@ describe('ImagesModule', () => {
         s3: mockS3Options,
       });
 
-      const optionsProvider = dynamicModule.providers?.find(
-        (p: any) => p.provide === IMAGES_MODULE_OPTIONS,
-      );
+      const optionsProvider = dynamicModule.providers?.find((p: any) => p.provide === IMAGES_MODULE_OPTIONS);
       expect(optionsProvider).toBeDefined();
       expect((optionsProvider as any).useValue.s3).toEqual(mockS3Options);
     });
@@ -150,9 +148,7 @@ describe('ImagesModule', () => {
         inject: ['ConfigService'],
       });
 
-      const optionsProvider = dynamicModule.providers?.find(
-        (p: any) => p.provide === IMAGES_MODULE_OPTIONS,
-      );
+      const optionsProvider = dynamicModule.providers?.find((p: any) => p.provide === IMAGES_MODULE_OPTIONS);
       expect((optionsProvider as any).inject).toContain('ConfigService');
     });
 
@@ -193,9 +189,7 @@ describe('ImagesModule', () => {
         useExisting: ExistingFactory,
       });
 
-      const optionsProvider = dynamicModule.providers?.find(
-        (p: any) => p.provide === IMAGES_MODULE_OPTIONS,
-      );
+      const optionsProvider = dynamicModule.providers?.find((p: any) => p.provide === IMAGES_MODULE_OPTIONS);
       expect((optionsProvider as any).inject).toContain(ExistingFactory);
     });
   });

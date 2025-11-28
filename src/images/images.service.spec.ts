@@ -454,11 +454,7 @@ describe('ImagesService', () => {
       // Allow async upload to complete
       await new Promise((resolve) => setImmediate(resolve));
 
-      expect(mockMinioClient.putObject).toHaveBeenCalledWith(
-        'test-bucket',
-        'test-300.png',
-        expect.any(Buffer),
-      );
+      expect(mockMinioClient.putObject).toHaveBeenCalledWith('test-bucket', 'test-300.png', expect.any(Buffer));
     });
 
     it('should handle subdirectory files correctly', async () => {
