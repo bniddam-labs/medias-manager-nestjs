@@ -2,19 +2,30 @@
 
 [![CI](https://github.com/bniddam-labs/medias-manager-nestjs/actions/workflows/ci.yml/badge.svg)](https://github.com/bniddam-labs/medias-manager-nestjs/actions/workflows/ci.yml)
 
-A production-ready NestJS module for image storage, retrieval, and on-demand resizing with S3/MinIO backend.
+A production-ready NestJS module for media storage, retrieval, and on-demand image resizing with S3/MinIO backend.
 
 ## Features
 
+- **Multi-Media Support** - Images, videos, audio, documents, and archives
 - **S3/MinIO Integration** - Works with any S3-compatible object storage (AWS S3, MinIO, DigitalOcean Spaces, etc.)
 - **On-Demand Image Resizing** - Automatic image resizing with Sharp, maintaining aspect ratio
 - **Intelligent Caching** - Resized images are automatically cached to S3 for faster subsequent requests
 - **HTTP Caching** - Full ETag support for 304 Not Modified responses (99% bandwidth savings)
-- **Memory Efficient** - Streaming support for original images (97% memory reduction for large files)
+- **Memory Efficient** - Streaming support for all media types (97% memory reduction for large files)
 - **Security First** - Built-in input validation, path traversal prevention, and file type restrictions
 - **Flexible Architecture** - Dynamic module pattern with sync/async configuration
 - **TypeScript Strict Mode** - Full type safety with comprehensive type definitions
 - **Zero Config Required** - Sensible defaults with optional controller (off by default)
+
+### Supported File Types
+
+| Category | Extensions |
+|----------|------------|
+| Images | `.png`, `.jpg`, `.jpeg`, `.gif`, `.webp`, `.svg`, `.ico`, `.bmp`, `.tiff`, `.avif` |
+| Videos | `.mp4`, `.webm`, `.ogg`, `.mov`, `.avi`, `.mkv`, `.m4v`, `.wmv`, `.flv` |
+| Audio | `.mp3`, `.wav`, `.flac`, `.aac`, `.m4a`, `.wma`, `.opus` |
+| Documents | `.pdf`, `.doc`, `.docx`, `.xls`, `.xlsx`, `.ppt`, `.pptx`, `.txt`, `.rtf`, `.csv` |
+| Archives | `.zip`, `.rar`, `.7z`, `.tar`, `.gz`, `.bz2` |
 
 ## Installation
 
@@ -91,11 +102,11 @@ pnpm add @nestjs/platform-express
 
 ```typescript
 import { Module } from '@nestjs/common';
-import { ImagesModule } from '@bniddam-labs/medias-manager-nestjs';
+import { MediasModule } from '@bniddam-labs/medias-manager-nestjs';
 
 @Module({
   imports: [
-    ImagesModule.forRoot({
+    MediasModule.forRoot({
       s3: {
         endPoint: 'localhost',
         port: 9000,
@@ -103,7 +114,7 @@ import { ImagesModule } from '@bniddam-labs/medias-manager-nestjs';
         accessKey: 'minioadmin',
         secretKey: 'minioadmin',
         region: 'us-east-1',
-        bucketName: 'images',
+        bucketName: 'medias',
       },
     }),
   ],
@@ -111,7 +122,7 @@ import { ImagesModule } from '@bniddam-labs/medias-manager-nestjs';
 export class AppModule {}
 ```
 
-That's it! The `ImagesService` is now available for dependency injection throughout your application.
+That's it! The `MediasService` is now available for dependency injection throughout your application.
 
 ## Configuration
 
@@ -120,11 +131,11 @@ That's it! The `ImagesService` is now available for dependency injection through
 Use `forRoot()` when your configuration is static or available at import time:
 
 ```typescript
-import { ImagesModule } from '@bniddam-labs/medias-manager-nestjs';
+import { MediasModule } from '@bniddam-labs/medias-manager-nestjs';
 
 @Module({
   imports: [
-    ImagesModule.forRoot({
+    MediasModule.forRoot({
       s3: {
         endPoint: 'play.min.io',
         port: 9000,
@@ -148,12 +159,12 @@ Use `forRootAsync()` with `useFactory` when you need to inject dependencies like
 
 ```typescript
 import { ConfigModule, ConfigService } from '@nestjs/config';
-import { ImagesModule } from '@bniddam-labs/medias-manager-nestjs';
+import { MediasModule } from '@bniddam-labs/medias-manager-nestjs';
 
 @Module({
   imports: [
     ConfigModule.forRoot(),
-    ImagesModule.forRootAsync({
+    MediasModule.forRootAsync({
       imports: [ConfigModule],
       useFactory: async (configService: ConfigService) => ({
         s3: {
@@ -182,16 +193,16 @@ Use `useClass` when you want to encapsulate configuration logic in a dedicated c
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import {
-  ImagesModule,
-  ImagesModuleOptions,
-  ImagesModuleOptionsFactory,
+  MediasModule,
+  MediasModuleOptions,
+  MediasModuleOptionsFactory,
 } from '@bniddam-labs/medias-manager-nestjs';
 
 @Injectable()
-class ImagesConfigService implements ImagesModuleOptionsFactory {
+class ImagesConfigService implements MediasModuleOptionsFactory {
   constructor(private configService: ConfigService) {}
 
-  createImagesModuleOptions(): ImagesModuleOptions {
+  createMediasModuleOptions(): MediasModuleOptions {
     return {
       s3: {
         endPoint: this.configService.get<string>('S3_ENDPOINT'),
@@ -209,7 +220,7 @@ class ImagesConfigService implements ImagesModuleOptionsFactory {
 @Module({
   imports: [
     ConfigModule.forRoot(),
-    ImagesModule.forRootAsync({
+    MediasModule.forRootAsync({
       imports: [ConfigModule],
       useClass: ImagesConfigService,
     }),
@@ -224,14 +235,14 @@ Use `useExisting` when you already have a configuration provider in your module:
 
 ```typescript
 import {
-  ImagesModule,
-  ImagesModuleOptions,
-  ImagesModuleOptionsFactory,
+  MediasModule,
+  MediasModuleOptions,
+  MediasModuleOptionsFactory,
 } from '@bniddam-labs/medias-manager-nestjs';
 
 @Injectable()
-class AppConfigService implements ImagesModuleOptionsFactory {
-  createImagesModuleOptions(): ImagesModuleOptions {
+class AppConfigService implements MediasModuleOptionsFactory {
+  createMediasModuleOptions(): MediasModuleOptions {
     return {
       s3: {
         endPoint: 'localhost',
@@ -240,7 +251,7 @@ class AppConfigService implements ImagesModuleOptionsFactory {
         accessKey: 'minioadmin',
         secretKey: 'minioadmin',
         region: 'us-east-1',
-        bucketName: 'images',
+        bucketName: 'medias',
       },
     };
   }
@@ -255,7 +266,7 @@ class ConfigModule {}
 @Module({
   imports: [
     ConfigModule,
-    ImagesModule.forRootAsync({
+    MediasModule.forRootAsync({
       imports: [ConfigModule],
       useExisting: AppConfigService,
     }),
@@ -267,14 +278,14 @@ export class AppModule {}
 ### Configuration Options Reference
 
 ```typescript
-interface ImagesModuleOptions {
+interface MediasModuleOptions {
   /**
    * S3/MinIO connection and bucket configuration
    */
   s3: S3Options;
 
   /**
-   * Whether to register the built-in ImagesController
+   * Whether to register the built-in MediasController
    * Default: false (recommended to create custom controller)
    */
   registerController?: boolean;
@@ -336,14 +347,14 @@ This is the **recommended approach** for production applications. Create your ow
 ```typescript
 import { Controller, Get, Param, Query, Res, Headers, UseGuards, NotFoundException } from '@nestjs/common';
 import { Response } from 'express';
-import { ImagesService } from '@bniddam-labs/medias-manager-nestjs';
+import { MediasService } from '@bniddam-labs/medias-manager-nestjs';
 import { AuthGuard } from './auth.guard';
 import { RateLimitGuard } from './rate-limit.guard';
 
-@Controller('api/images')
+@Controller('api/medias')
 @UseGuards(AuthGuard, RateLimitGuard)  // Your security
-export class MyImagesController {
-  constructor(private readonly imagesService: ImagesService) {}
+export class MyMediasController {
+  constructor(private readonly imagesService: MediasService) {}
 
   @Get(':fileName')
   async getImage(
@@ -417,16 +428,16 @@ export class MyImagesController {
 
 **Module Setup:**
 ```typescript
-import { ImagesModule } from '@bniddam-labs/medias-manager-nestjs';
+import { MediasModule } from '@bniddam-labs/medias-manager-nestjs';
 
 @Module({
   imports: [
-    ImagesModule.forRoot({
+    MediasModule.forRoot({
       s3: { /* your config */ },
       registerController: false,  // Don't use built-in controller
     }),
   ],
-  controllers: [MyImagesController],  // Use your custom controller
+  controllers: [MyMediasController],  // Use your custom controller
 })
 export class AppModule {}
 ```
@@ -436,11 +447,11 @@ export class AppModule {}
 For quick prototyping or simple use cases, you can enable the built-in controller. **Warning:** This controller has no authentication, authorization, or rate limiting.
 
 ```typescript
-import { ImagesModule } from '@bniddam-labs/medias-manager-nestjs';
+import { MediasModule } from '@bniddam-labs/medias-manager-nestjs';
 
 @Module({
   imports: [
-    ImagesModule.forRoot({
+    MediasModule.forRoot({
       s3: { /* your config */ },
       registerController: true,  // Enable built-in controller
       routePrefix: 'images',     // Optional: customize route
@@ -451,8 +462,8 @@ export class AppModule {}
 ```
 
 This automatically provides:
-- `GET /images/:fileName?size=300` - Get image (optionally resized)
-- `DELETE /images/:fileName` - Delete image
+- `GET /medias/:fileName?size=300` - Get image (optionally resized)
+- `DELETE /medias/:fileName` - Delete image
 
 ### Pattern 3: Service-Only Usage (No HTTP Layer)
 
@@ -460,11 +471,11 @@ If you don't need HTTP endpoints and only want to use the service programmatical
 
 ```typescript
 import { Injectable } from '@nestjs/common';
-import { ImagesService } from '@bniddam-labs/medias-manager-nestjs';
+import { MediasService } from '@bniddam-labs/medias-manager-nestjs';
 
 @Injectable()
 export class ProfileService {
-  constructor(private readonly imagesService: ImagesService) {}
+  constructor(private readonly imagesService: MediasService) {}
 
   async updateUserAvatar(userId: string, imageBuffer: Buffer): Promise<string> {
     const fileName = `avatar-${userId}.jpg`;
@@ -492,9 +503,9 @@ export class ProfileService {
 
 ## API Reference
 
-### ImagesModule
+### MediasModule
 
-#### `forRoot(options: ImagesModuleOptions): DynamicModule`
+#### `forRoot(options: MediasModuleOptions): DynamicModule`
 
 Synchronously registers the module with static configuration.
 
@@ -505,7 +516,7 @@ Synchronously registers the module with static configuration.
 
 **Example:**
 ```typescript
-ImagesModule.forRoot({
+MediasModule.forRoot({
   s3: {
     endPoint: 'localhost',
     port: 9000,
@@ -513,13 +524,13 @@ ImagesModule.forRoot({
     accessKey: 'minioadmin',
     secretKey: 'minioadmin',
     region: 'us-east-1',
-    bucketName: 'images',
+    bucketName: 'medias',
   },
   registerController: false,
 })
 ```
 
-#### `forRootAsync(options: ImagesModuleAsyncOptions): DynamicModule`
+#### `forRootAsync(options: MediasModuleAsyncOptions): DynamicModule`
 
 Asynchronously registers the module with dynamic configuration.
 
@@ -530,7 +541,7 @@ Asynchronously registers the module with dynamic configuration.
 
 **Example:**
 ```typescript
-ImagesModule.forRootAsync({
+MediasModule.forRootAsync({
   imports: [ConfigModule],
   useFactory: async (configService: ConfigService) => ({
     s3: {
@@ -542,12 +553,12 @@ ImagesModule.forRootAsync({
 })
 ```
 
-### ImagesService
+### MediasService
 
 The service provides all image processing and S3 operations. Inject it into your controllers or services:
 
 ```typescript
-constructor(private readonly imagesService: ImagesService) {}
+constructor(private readonly imagesService: MediasService) {}
 ```
 
 #### High-Level Methods (Recommended)
@@ -780,7 +791,7 @@ Delete file from S3.
 await this.imagesService.deleteFile('photo.jpg');
 ```
 
-### ImagesController (Optional)
+### MediasController (Optional)
 
 When `registerController: true` is set, the following endpoints are automatically registered:
 
@@ -815,13 +826,13 @@ Get an image, optionally resized.
 **Examples:**
 ```bash
 # Get original image
-GET /images/photo.jpg
+GET /medias/photo.jpg
 
 # Get resized image (300px width)
-GET /images/photo.jpg?size=300
+GET /medias/photo.jpg?size=300
 
 # With cache validation
-GET /images/photo.jpg
+GET /medias/photo.jpg
 If-None-Match: "5d41402abc4b2a76b9719d911017c592"
 ```
 
@@ -840,7 +851,7 @@ Delete an image from S3.
 
 **Example:**
 ```bash
-DELETE /images/photo.jpg
+DELETE /medias/photo.jpg
 ```
 
 ### DTOs and Validation
@@ -905,15 +916,15 @@ Applied to the `size` query parameter:
 // app.module.ts
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
-import { ImagesModule } from '@bniddam-labs/medias-manager-nestjs';
+import { MediasModule } from '@bniddam-labs/medias-manager-nestjs';
 import { AuthModule } from './auth/auth.module';
-import { ImagesController } from './images/images.controller';
+import { MediasController } from './medias/medias.controller';
 
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
     AuthModule,
-    ImagesModule.forRootAsync({
+    MediasModule.forRootAsync({
       imports: [ConfigModule],
       useFactory: async (configService: ConfigService) => ({
         s3: {
@@ -930,13 +941,13 @@ import { ImagesController } from './images/images.controller';
       inject: [ConfigService],
     }),
   ],
-  controllers: [ImagesController],
+  controllers: [MediasController],
 })
 export class AppModule {}
 ```
 
 ```typescript
-// images/images.controller.ts
+// images/medias.controller.ts
 import {
   Controller,
   Get,
@@ -951,14 +962,14 @@ import {
   InternalServerErrorException,
 } from '@nestjs/common';
 import { Response } from 'express';
-import { ImagesService, GetImageParamsDto, GetImageQueryDto } from '@bniddam-labs/medias-manager-nestjs';
+import { MediasService, GetImageParamsDto, GetImageQueryDto } from '@bniddam-labs/medias-manager-nestjs';
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { ThrottlerGuard } from '@nestjs/throttler';
 
-@Controller('api/images')
+@Controller('api/medias')
 @UseGuards(JwtAuthGuard, ThrottlerGuard)
-export class ImagesController {
-  constructor(private readonly imagesService: ImagesService) {}
+export class MediasController {
+  constructor(private readonly imagesService: MediasService) {}
 
   @Get(':fileName')
   async getImage(
@@ -1054,13 +1065,13 @@ export class ImagesController {
 
 ```typescript
 import { Injectable, Logger } from '@nestjs/common';
-import { ImagesService } from '@bniddam-labs/medias-manager-nestjs';
+import { MediasService } from '@bniddam-labs/medias-manager-nestjs';
 
 @Injectable()
 export class ImageUploadService {
   private readonly logger = new Logger(ImageUploadService.name);
 
-  constructor(private readonly imagesService: ImagesService) {}
+  constructor(private readonly imagesService: MediasService) {}
 
   async uploadUserPhoto(userId: string, file: Express.Multer.File): Promise<string> {
     const fileName = `user-${userId}-${Date.now()}.jpg`;
@@ -1129,7 +1140,7 @@ import configuration from './config/configuration';
       load: [configuration],
       isGlobal: true,
     }),
-    ImagesModule.forRootAsync({
+    MediasModule.forRootAsync({
       useFactory: (configService: ConfigService) => ({
         s3: configService.get('s3'),
       }),
@@ -1145,11 +1156,11 @@ export class AppModule {}
 ```typescript
 import { Injectable } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
-import { ImagesService } from '@bniddam-labs/medias-manager-nestjs';
+import { MediasService } from '@bniddam-labs/medias-manager-nestjs';
 
 @Injectable()
 export class ImageCleanupService {
-  constructor(private readonly imagesService: ImagesService) {}
+  constructor(private readonly imagesService: MediasService) {}
 
   @Cron(CronExpression.EVERY_DAY_AT_MIDNIGHT)
   async cleanupOldThumbnails() {
@@ -1245,7 +1256,7 @@ import { ThrottlerModule } from '@nestjs/throttler';
       ttl: 60000,   // 60 seconds
       limit: 100,   // 100 requests per minute
     }]),
-    ImagesModule.forRoot({ /* config */ }),
+    MediasModule.forRoot({ /* config */ }),
   ],
 })
 export class AppModule {}
@@ -1274,7 +1285,7 @@ This library implements full ETag support for optimal bandwidth usage:
 
 1. **First Request:**
    ```
-   GET /images/photo.jpg
+   GET /medias/photo.jpg
    Response: 200 OK
    ETag: "5d41402abc4b2a76b9719d911017c592"
    Content-Length: 245678
@@ -1283,7 +1294,7 @@ This library implements full ETag support for optimal bandwidth usage:
 
 2. **Subsequent Requests:**
    ```
-   GET /images/photo.jpg
+   GET /medias/photo.jpg
    If-None-Match: "5d41402abc4b2a76b9719d911017c592"
    Response: 304 Not Modified
    [no body - saves 245KB bandwidth]
@@ -1300,7 +1311,7 @@ Resized images are automatically cached to S3:
 
 1. **First resize request:**
    ```
-   GET /images/photo.jpg?size=300
+   GET /medias/photo.jpg?size=300
    - Checks for cached "photo-300.jpg"
    - Not found → fetches "photo.jpg"
    - Resizes to 300px width
@@ -1310,7 +1321,7 @@ Resized images are automatically cached to S3:
 
 2. **Subsequent resize requests:**
    ```
-   GET /images/photo.jpg?size=300
+   GET /medias/photo.jpg?size=300
    - Finds cached "photo-300.jpg"
    - Returns immediately (no processing)
    ```
@@ -1363,9 +1374,9 @@ This library is written in TypeScript with strict mode enabled and includes comp
 ```typescript
 // Import types for use in your application
 import type {
-  ImagesModuleOptions,
-  ImagesModuleAsyncOptions,
-  ImagesModuleOptionsFactory,
+  MediasModuleOptions,
+  MediasModuleAsyncOptions,
+  MediasModuleOptionsFactory,
   S3Options,
   ImageStreamResponse,
   ImageBufferResponse,
@@ -1375,9 +1386,9 @@ import type {
 ### Type-Safe Configuration
 
 ```typescript
-import type { ImagesModuleOptions } from '@bniddam-labs/medias-manager-nestjs';
+import type { MediasModuleOptions } from '@bniddam-labs/medias-manager-nestjs';
 
-const config: ImagesModuleOptions = {
+const config: MediasModuleOptions = {
   s3: {
     endPoint: 'localhost',     // TypeScript enforces string
     port: 9000,                // TypeScript enforces number
@@ -1385,7 +1396,7 @@ const config: ImagesModuleOptions = {
     accessKey: 'key',
     secretKey: 'secret',
     region: 'us-east-1',
-    bucketName: 'images',
+    bucketName: 'medias',
   },
   registerController: true,    // TypeScript enforces boolean
 };
@@ -1408,7 +1419,7 @@ const result3 = await imagesService.getImageStream('photo.jpg', etag);  // OK
 import type { DynamicModule } from '@nestjs/common';
 
 // Return type is properly typed
-const module: DynamicModule = ImagesModule.forRoot(config);
+const module: DynamicModule = MediasModule.forRoot(config);
 ```
 
 ## License

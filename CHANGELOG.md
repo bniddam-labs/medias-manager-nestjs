@@ -7,6 +7,54 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.0.0] - 2025-11-28
+
+### ⚠️ BREAKING CHANGES
+- Renamed all exports from `Images*` to `Medias*`:
+  - `ImagesModule` → `MediasModule`
+  - `ImagesService` → `MediasService`
+  - `ImagesController` → `MediasController`
+  - `ImagesModuleOptions` → `MediasModuleOptions`
+  - `IMAGES_MODULE_OPTIONS` → `MEDIAS_MODULE_OPTIONS`
+- Renamed DTOs:
+  - `GetImageParamsDto` → `GetMediaParamsDto`
+  - `GetImageQueryDto` → `GetMediaQueryDto`
+  - `DeleteImageParamsDto` → `DeleteMediaParamsDto`
+- Renamed service methods:
+  - `getFile()` → `getMedia()`
+  - `getFileStream()` → `getMediaFileStream()`
+  - `getFileStat()` → `getMediaStat()`
+  - `uploadFile()` → `uploadMedia()`
+  - `deleteFile()` → `deleteMedia()`
+- Response types renamed:
+  - `ImageStreamResponse` → `MediaStreamResponse`
+  - `ImageBufferResponse` → `MediaBufferResponse`
+- Default controller route changed from `/images` to `/medias`
+
+### Added
+- **Full media support**: Videos, audio, documents, and archives
+  - Video: `.mp4`, `.webm`, `.ogg`, `.mov`, `.avi`, `.mkv`, `.m4v`, `.wmv`, `.flv`
+  - Audio: `.mp3`, `.wav`, `.flac`, `.aac`, `.m4a`, `.wma`, `.opus`
+  - Documents: `.pdf`, `.doc`, `.docx`, `.xls`, `.xlsx`, `.ppt`, `.pptx`, `.txt`, `.rtf`, `.csv`
+  - Archives: `.zip`, `.rar`, `.7z`, `.tar`, `.gz`, `.bz2`
+  - Additional images: `.svg`, `.ico`, `.bmp`, `.tiff`, `.avif`
+- Helper methods in `MediasService`:
+  - `isImage(fileName)`: Check if file is an image
+  - `isResizable(fileName)`: Check if file can be resized with Sharp
+- Protection against resizing non-image files (throws `BadRequestException`)
+- Exported constants for extension categories:
+  - `IMAGE_EXTENSIONS`, `RESIZABLE_IMAGE_EXTENSIONS`
+  - `VIDEO_EXTENSIONS`, `AUDIO_EXTENSIONS`
+  - `DOCUMENT_EXTENSIONS`, `ARCHIVE_EXTENSIONS`
+  - `ALL_MEDIA_EXTENSIONS`, `MIME_TYPES`
+- New config options:
+  - `allowedExtensions`: Custom whitelist of allowed extensions
+  - `maxResizeWidth`: Maximum width for image resizing (default: 5000)
+
+### Changed
+- Resize operations now explicitly validate that the file is a resizable image format
+- Improved error messages for resize attempts on non-image files
+
 ## [2.1.0] - 2025-11-28
 
 ### Fixed

@@ -1,8 +1,11 @@
 import { createZodDto } from 'nestjs-zod';
 import { z } from 'zod';
+import { ALL_MEDIA_EXTENSIONS } from '../medias.constants';
 
-// Zod schema for delete path parameters with security validation
-const DeleteImageParamsSchema = z.object({
+/**
+ * Zod schema for delete media path parameters with security validation
+ */
+const DeleteMediaParamsSchema = z.object({
   fileName: z
     .string()
     .min(1, 'File name is required')
@@ -20,11 +23,11 @@ const DeleteImageParamsSchema = z.object({
     .refine(
       (val) => {
         // Ensure valid file extension
-        const validExtensions = ['.png', '.jpg', '.jpeg', '.gif', '.webp'];
-        return validExtensions.some((ext) => val.toLowerCase().endsWith(ext));
+        const ext = val.toLowerCase().match(/\.[a-z0-9]+$/)?.[0];
+        return ext ? ALL_MEDIA_EXTENSIONS.includes(ext) : false;
       },
       {
-        message: 'Invalid file extension - only .png, .jpg, .jpeg, .gif, .webp are allowed',
+        message: `Invalid file extension - allowed extensions: ${ALL_MEDIA_EXTENSIONS.join(', ')}`,
       },
     )
     .refine(
@@ -38,5 +41,4 @@ const DeleteImageParamsSchema = z.object({
     ),
 });
 
-// Create DTO from Zod schema
-export class DeleteImageParamsDto extends createZodDto(DeleteImageParamsSchema) {}
+export class DeleteMediaParamsDto extends createZodDto(DeleteMediaParamsSchema) {}
