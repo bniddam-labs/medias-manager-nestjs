@@ -16,6 +16,8 @@ A production-ready NestJS module for image storage, retrieval, and on-demand res
 
 ## Installation
 
+### Install from npm
+
 ```bash
 # Using pnpm (recommended)
 pnpm add @bniddam-labs/medias-manager-nestjs
@@ -25,6 +27,44 @@ npm install @bniddam-labs/medias-manager-nestjs
 
 # Using yarn
 yarn add @bniddam-labs/medias-manager-nestjs
+```
+
+### Install from GitHub
+
+You can install directly from the GitHub repository:
+
+```bash
+# Using pnpm (recommended)
+pnpm add github:bniddam-labs/medias-manager-nestjs
+
+# Using npm
+npm install github:bniddam-labs/medias-manager-nestjs
+
+# Using yarn
+yarn add github:bniddam-labs/medias-manager-nestjs
+```
+
+Or in your `package.json`:
+
+```json
+{
+  "dependencies": {
+    "@bniddam-labs/medias-manager-nestjs": "github:bniddam-labs/medias-manager-nestjs"
+  }
+}
+```
+
+You can also install from a specific branch, tag, or commit:
+
+```bash
+# From a specific branch
+pnpm add github:bniddam-labs/medias-manager-nestjs#main
+
+# From a git tag (e.g., v1.0.0)
+pnpm add github:bniddam-labs/medias-manager-nestjs#v1.0.0
+
+# From a specific commit
+pnpm add github:bniddam-labs/medias-manager-nestjs#abc1234
 ```
 
 ### Peer Dependencies

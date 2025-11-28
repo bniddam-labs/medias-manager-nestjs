@@ -33,6 +33,7 @@
     "test": "jest --passWithNoTests",
     "test:watch": "jest --watch --passWithNoTests",
     "test:cov": "jest --coverage --passWithNoTests",
+    "prepare": "nest build",
     "prepublishOnly": "pnpm run build"
   },
   "dependencies": {
