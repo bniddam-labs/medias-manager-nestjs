@@ -46,8 +46,8 @@ const GetImageParamsSchema = z.object({
     )
     .refine(
       (val) => {
-        // Only allow alphanumeric, hyphens, underscores, and dots
-        return /^[a-zA-Z0-9._-]+$/.test(val);
+        // Allow alphanumeric, hyphens, underscores, dots, and forward slashes for folder paths
+        return /^[a-zA-Z0-9._/-]+$/.test(val);
       },
       {
         message: 'File name contains invalid characters',
