@@ -73,7 +73,7 @@ let ImagesController = ImagesController_1 = class ImagesController {
 };
 exports.ImagesController = ImagesController;
 __decorate([
-    (0, common_1.Get)(':fileName'),
+    (0, common_1.Get)(':fileName(*)'),
     __param(0, (0, common_1.Param)()),
     __param(1, (0, common_1.Query)()),
     __param(2, (0, common_1.Req)()),
@@ -84,7 +84,7 @@ __decorate([
     __metadata("design:returntype", Promise)
 ], ImagesController.prototype, "getFile", null);
 __decorate([
-    (0, common_1.Delete)(':fileName'),
+    (0, common_1.Delete)(':fileName(*)'),
     __param(0, (0, common_1.Param)()),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [delete_image_dto_1.DeleteImageParamsDto]),
