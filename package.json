@@ -26,6 +26,9 @@
     "type": "git",
     "url": "https://github.com/bniddam-labs/medias-manager-nestjs"
   },
+  "engines": {
+    "node": ">=20.0.0"
+  },
   "scripts": {
     "build": "tsc -p tsconfig.build.json",
     "format": "prettier --write \"src/**/*.ts\"",

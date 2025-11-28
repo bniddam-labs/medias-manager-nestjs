@@ -1,5 +1,7 @@
 # @bniddam-labs/medias-manager-nestjs
 
+[![CI](https://github.com/bniddam-labs/medias-manager-nestjs/actions/workflows/ci.yml/badge.svg)](https://github.com/bniddam-labs/medias-manager-nestjs/actions/workflows/ci.yml)
+
 A production-ready NestJS module for image storage, retrieval, and on-demand resizing with S3/MinIO backend.
 
 ## Features
