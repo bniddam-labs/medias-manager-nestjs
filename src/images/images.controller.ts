@@ -20,7 +20,7 @@ export class ImagesController {
 
   constructor(private readonly imagesService: ImagesService) {}
 
-  @Get(':fileName(*)')
+  @Get('*fileName')
   async getFile(
     @Param() params: GetImageParamsDto,
     @Query() query: GetImageQueryDto,
@@ -78,7 +78,7 @@ export class ImagesController {
     }
   }
 
-  @Delete(':fileName(*)')
+  @Delete('*fileName')
   async deleteFile(@Param() params: DeleteImageParamsDto): Promise<void> {
     return this.imagesService.deleteFile(params.fileName);
   }
