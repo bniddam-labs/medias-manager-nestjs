@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.ALL_MEDIA_EXTENSIONS = exports.ARCHIVE_EXTENSIONS = exports.DOCUMENT_EXTENSIONS = exports.AUDIO_EXTENSIONS = exports.VIDEO_EXTENSIONS = exports.RESIZABLE_IMAGE_EXTENSIONS = exports.IMAGE_EXTENSIONS = exports.MIME_TYPES = exports.MEDIAS_MODULE_OPTIONS = exports.GetMediaQueryDto = exports.GetMediaParamsDto = exports.DeleteMediaParamsDto = exports.MediasController = exports.MediasService = exports.MediasModule = void 0;
+exports.HTTP_STATUS = exports.MAX_RESIZE_WIDTH_LIMIT = exports.MAX_FILENAME_LENGTH = exports.SIZE_UNITS = exports.DEFAULT_MAX_ORIGINAL_FILE_SIZE = exports.DEFAULT_MAX_RESIZE_WIDTH = exports.ALL_MEDIA_EXTENSIONS = exports.ARCHIVE_EXTENSIONS = exports.DOCUMENT_EXTENSIONS = exports.AUDIO_EXTENSIONS = exports.VIDEO_EXTENSIONS = exports.RESIZABLE_IMAGE_EXTENSIONS = exports.IMAGE_EXTENSIONS = exports.MIME_TYPES = exports.MEDIAS_MODULE_OPTIONS = exports.GetMediaQueryDto = exports.GetMediaParamsDto = exports.DeleteMediaParamsDto = exports.MediasController = exports.MediasService = exports.MediasModule = void 0;
 var medias_module_1 = require("./medias/medias.module");
 Object.defineProperty(exports, "MediasModule", { enumerable: true, get: function () { return medias_module_1.MediasModule; } });
 var medias_service_1 = require("./medias/medias.service");
@@ -22,4 +22,10 @@ Object.defineProperty(exports, "AUDIO_EXTENSIONS", { enumerable: true, get: func
 Object.defineProperty(exports, "DOCUMENT_EXTENSIONS", { enumerable: true, get: function () { return medias_constants_1.DOCUMENT_EXTENSIONS; } });
 Object.defineProperty(exports, "ARCHIVE_EXTENSIONS", { enumerable: true, get: function () { return medias_constants_1.ARCHIVE_EXTENSIONS; } });
 Object.defineProperty(exports, "ALL_MEDIA_EXTENSIONS", { enumerable: true, get: function () { return medias_constants_1.ALL_MEDIA_EXTENSIONS; } });
+Object.defineProperty(exports, "DEFAULT_MAX_RESIZE_WIDTH", { enumerable: true, get: function () { return medias_constants_1.DEFAULT_MAX_RESIZE_WIDTH; } });
+Object.defineProperty(exports, "DEFAULT_MAX_ORIGINAL_FILE_SIZE", { enumerable: true, get: function () { return medias_constants_1.DEFAULT_MAX_ORIGINAL_FILE_SIZE; } });
+Object.defineProperty(exports, "SIZE_UNITS", { enumerable: true, get: function () { return medias_constants_1.SIZE_UNITS; } });
+Object.defineProperty(exports, "MAX_FILENAME_LENGTH", { enumerable: true, get: function () { return medias_constants_1.MAX_FILENAME_LENGTH; } });
+Object.defineProperty(exports, "MAX_RESIZE_WIDTH_LIMIT", { enumerable: true, get: function () { return medias_constants_1.MAX_RESIZE_WIDTH_LIMIT; } });
+Object.defineProperty(exports, "HTTP_STATUS", { enumerable: true, get: function () { return medias_constants_1.HTTP_STATUS; } });
 //# sourceMappingURL=index.js.map

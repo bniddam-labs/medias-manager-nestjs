@@ -242,10 +242,20 @@ let MediasService = MediasService_1 = class MediasService {
             this.logWarn('Attempted to resize non-image file', { fileName });
             throw new common_1.BadRequestException(`Cannot resize non-image file ${fileName}. Resize is only supported for images.`);
         }
-        const maxWidth = this.options.maxResizeWidth || 5000;
+        const maxWidth = this.options.maxResizeWidth ?? medias_constants_1.DEFAULT_MAX_RESIZE_WIDTH;
         if (size > maxWidth) {
             this.logWarn('Resize size exceeds maximum', { fileName, size, maxWidth });
             throw new common_1.BadRequestException(`Size cannot exceed ${maxWidth} pixels`);
+        }
+        const stat = await this.getMediaStat(fileName);
+        const maxOriginalSize = this.options.maxOriginalFileSize ?? medias_constants_1.DEFAULT_MAX_ORIGINAL_FILE_SIZE;
+        if (maxOriginalSize > 0 && stat.size > maxOriginalSize) {
+            this.logWarn('Original image too large for on-the-fly resize', {
+                fileName,
+                size: stat.size,
+                maxOriginalSize,
+            });
+            throw new common_1.BadRequestException(`Image too large to resize on-the-fly (${Math.round(stat.size / medias_constants_1.SIZE_UNITS.MEGABYTE)}MB). Maximum allowed: ${Math.round(maxOriginalSize / medias_constants_1.SIZE_UNITS.MEGABYTE)}MB.`);
         }
         const ext = path.extname(fileName);
         const baseName = path.basename(fileName, ext);
@@ -282,8 +292,22 @@ let MediasService = MediasService_1 = class MediasService {
         this.logVerbose('Fetching original image for resize', { fileName });
         const originalFile = await this.getMedia(fileName);
         this.logDebug('Original image loaded', { fileName, originalSize: originalFile.length });
-        this.logVerbose('Resizing image with Sharp', { fileName, targetWidth: size });
-        const resizedBuffer = await (0, sharp_1.default)(originalFile).resize(size).toBuffer();
+        const autoPreventUpscale = this.options.autoPreventUpscale ?? true;
+        let finalSize = size;
+        if (autoPreventUpscale) {
+            const image = (0, sharp_1.default)(originalFile);
+            const metadata = await image.metadata();
+            if (metadata.width && size > metadata.width) {
+                this.logDebug('Requested size exceeds original width, preventing upscale', {
+                    fileName,
+                    requestedSize: size,
+                    originalWidth: metadata.width,
+                });
+                finalSize = metadata.width;
+            }
+        }
+        this.logVerbose('Resizing image with Sharp', { fileName, targetWidth: finalSize });
+        const resizedBuffer = await (0, sharp_1.default)(originalFile).resize(finalSize).toBuffer();
         const etag = this.generateETagFromBuffer(resizedBuffer);
         this.logDebug('Image resized', { fileName, originalSize: originalFile.length, resizedSize: resizedBuffer.length, etag });
         if (ifNoneMatch === etag) {

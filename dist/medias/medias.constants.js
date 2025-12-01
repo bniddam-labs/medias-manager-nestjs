@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.MIME_TYPES = exports.ALL_MEDIA_EXTENSIONS = exports.ARCHIVE_EXTENSIONS = exports.DOCUMENT_EXTENSIONS = exports.AUDIO_EXTENSIONS = exports.VIDEO_EXTENSIONS = exports.IMAGE_EXTENSIONS = exports.RESIZABLE_IMAGE_EXTENSIONS = exports.MEDIAS_MODULE_OPTIONS = void 0;
+exports.HTTP_STATUS = exports.MAX_RESIZE_WIDTH_LIMIT = exports.MAX_FILENAME_LENGTH = exports.SIZE_UNITS = exports.DEFAULT_MAX_ORIGINAL_FILE_SIZE = exports.DEFAULT_MAX_RESIZE_WIDTH = exports.MIME_TYPES = exports.ALL_MEDIA_EXTENSIONS = exports.ARCHIVE_EXTENSIONS = exports.DOCUMENT_EXTENSIONS = exports.AUDIO_EXTENSIONS = exports.VIDEO_EXTENSIONS = exports.IMAGE_EXTENSIONS = exports.RESIZABLE_IMAGE_EXTENSIONS = exports.MEDIAS_MODULE_OPTIONS = void 0;
 exports.MEDIAS_MODULE_OPTIONS = 'MEDIAS_MODULE_OPTIONS';
 exports.RESIZABLE_IMAGE_EXTENSIONS = ['.png', '.jpg', '.jpeg', '.gif', '.webp', '.avif', '.tiff'];
 exports.IMAGE_EXTENSIONS = [...exports.RESIZABLE_IMAGE_EXTENSIONS, '.svg', '.ico', '.bmp'];
@@ -52,5 +52,21 @@ exports.MIME_TYPES = {
     '.tar': 'application/x-tar',
     '.gz': 'application/gzip',
     '.bz2': 'application/x-bzip2',
+};
+exports.DEFAULT_MAX_RESIZE_WIDTH = 1200;
+const BYTES_PER_KILOBYTE = 1024;
+const KILOBYTES_PER_MEGABYTE = 1024;
+const BYTES_PER_MEGABYTE = KILOBYTES_PER_MEGABYTE * BYTES_PER_KILOBYTE;
+const DEFAULT_MAX_FILE_SIZE_MB = 15;
+exports.DEFAULT_MAX_ORIGINAL_FILE_SIZE = DEFAULT_MAX_FILE_SIZE_MB * BYTES_PER_MEGABYTE;
+exports.SIZE_UNITS = {
+    KILOBYTE: BYTES_PER_KILOBYTE,
+    MEGABYTE: BYTES_PER_MEGABYTE,
+};
+exports.MAX_FILENAME_LENGTH = 255;
+exports.MAX_RESIZE_WIDTH_LIMIT = 5000;
+exports.HTTP_STATUS = {
+    NOT_MODIFIED: 304,
+    INTERNAL_SERVER_ERROR: 500,
 };
 //# sourceMappingURL=medias.constants.js.map

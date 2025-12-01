@@ -11,35 +11,27 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 var __param = (this && this.__param) || function (paramIndex, decorator) {
     return function (target, key) { decorator(target, key, paramIndex); }
 };
-var MediasController_1;
+var ImagesController_1;
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.MediasController = void 0;
+exports.ImagesController = void 0;
 const common_1 = require("@nestjs/common");
-const delete_media_dto_1 = require("./dto/delete-media.dto");
-const get_media_dto_1 = require("./dto/get-media.dto");
-const medias_constants_1 = require("./medias.constants");
-const medias_service_1 = require("./medias.service");
-let MediasController = MediasController_1 = class MediasController {
-    constructor(mediasService) {
-        this.mediasService = mediasService;
-        this.logger = new common_1.Logger(MediasController_1.name);
+const delete_image_dto_1 = require("./dto/delete-image.dto");
+const get_image_dto_1 = require("./dto/get-image.dto");
+const images_service_1 = require("./images.service");
+let ImagesController = ImagesController_1 = class ImagesController {
+    constructor(imagesService) {
+        this.imagesService = imagesService;
+        this.logger = new common_1.Logger(ImagesController_1.name);
     }
-    async getMedia(params, query, req, res) {
+    async getFile(params, query, req, res) {
         const fileName = Array.isArray(params.fileName) ? params.fileName.join('/') : params.fileName;
         const { size } = query;
         const ifNoneMatch = req.headers['if-none-match'];
         try {
             if (size && parseInt(size, 10) > 0) {
-                const requestedSize = parseInt(size, 10);
-                if (!this.mediasService.isResizable(fileName)) {
-                    if (this.mediasService.isImage(fileName)) {
-                        throw new common_1.BadRequestException(`This image format does not support resizing. Serve without size parameter.`);
-                    }
-                    throw new common_1.BadRequestException(`Cannot resize non-image files. Remove the size parameter to serve the file.`);
-                }
-                const result = await this.mediasService.getResizedImage(fileName, requestedSize, ifNoneMatch);
+                const result = await this.imagesService.getResizedImage(fileName, parseInt(size, 10), ifNoneMatch);
                 if (result.notModified) {
-                    res.status(medias_constants_1.HTTP_STATUS.NOT_MODIFIED).end();
+                    res.status(304).end();
                     return;
                 }
                 res.setHeader('Content-Type', result.mimeType);
@@ -50,9 +42,9 @@ let MediasController = MediasController_1 = class MediasController {
                 res.send(result.buffer);
             }
             else {
-                const result = await this.mediasService.getMediaStream(fileName, ifNoneMatch);
+                const result = await this.imagesService.getImageStream(fileName, ifNoneMatch);
                 if (result.notModified) {
-                    res.status(medias_constants_1.HTTP_STATUS.NOT_MODIFIED).end();
+                    res.status(304).end();
                     return;
                 }
                 res.setHeader('Content-Type', result.mimeType);
@@ -65,25 +57,22 @@ let MediasController = MediasController_1 = class MediasController {
                 result.stream.on('error', (error) => {
                     this.logger.error(`Stream error: ${error.message}`);
                     if (!res.headersSent) {
-                        res.status(medias_constants_1.HTTP_STATUS.INTERNAL_SERVER_ERROR).end();
+                        res.status(500).end();
                     }
                 });
             }
         }
         catch (error) {
-            if (error instanceof common_1.BadRequestException) {
-                throw error;
-            }
-            this.logger.error(`Error serving media: ${error instanceof Error ? error.message : 'Unknown error'}`);
-            throw new common_1.InternalServerErrorException('Error serving media');
+            this.logger.error(`Error serving image: ${error instanceof Error ? error.message : 'Unknown error'}`);
+            throw new common_1.InternalServerErrorException('Error serving image');
         }
     }
-    async deleteMedia(params) {
+    async deleteFile(params) {
         const fileName = Array.isArray(params.fileName) ? params.fileName.join('/') : params.fileName;
-        return this.mediasService.deleteMedia(fileName);
+        return this.imagesService.deleteFile(fileName);
     }
 };
-exports.MediasController = MediasController;
+exports.ImagesController = ImagesController;
 __decorate([
     (0, common_1.Get)('*fileName'),
     __param(0, (0, common_1.Param)()),
@@ -91,18 +80,18 @@ __decorate([
     __param(2, (0, common_1.Req)()),
     __param(3, (0, common_1.Res)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [get_media_dto_1.GetMediaParamsDto, get_media_dto_1.GetMediaQueryDto, Object, Object]),
+    __metadata("design:paramtypes", [get_image_dto_1.GetImageParamsDto, get_image_dto_1.GetImageQueryDto, Object, Object]),
     __metadata("design:returntype", Promise)
-], MediasController.prototype, "getMedia", null);
+], ImagesController.prototype, "getFile", null);
 __decorate([
     (0, common_1.Delete)('*fileName'),
     __param(0, (0, common_1.Param)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [delete_media_dto_1.DeleteMediaParamsDto]),
+    __metadata("design:paramtypes", [delete_image_dto_1.DeleteImageParamsDto]),
     __metadata("design:returntype", Promise)
-], MediasController.prototype, "deleteMedia", null);
-exports.MediasController = MediasController = MediasController_1 = __decorate([
-    (0, common_1.Controller)('medias'),
-    __metadata("design:paramtypes", [medias_service_1.MediasService])
-], MediasController);
-//# sourceMappingURL=medias.controller.js.map
+], ImagesController.prototype, "deleteFile", null);
+exports.ImagesController = ImagesController = ImagesController_1 = __decorate([
+    (0, common_1.Controller)('images'),
+    __metadata("design:paramtypes", [images_service_1.ImagesService])
+], ImagesController);
+//# sourceMappingURL=images.controller.js.map

@@ -14,6 +14,8 @@ export interface MediasModuleOptions {
     registerController?: boolean;
     allowedExtensions?: string[];
     maxResizeWidth?: number;
+    autoPreventUpscale?: boolean;
+    maxOriginalFileSize?: number;
     logLevel?: MediasLogLevel;
 }
 export interface MediasModuleOptionsFactory {

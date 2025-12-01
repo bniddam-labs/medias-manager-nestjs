@@ -8,7 +8,7 @@ const GetMediaParamsSchema = zod_1.z.object({
     fileName: zod_1.z
         .string()
         .min(1, 'File name is required')
-        .max(255, 'File name is too long')
+        .max(medias_constants_1.MAX_FILENAME_LENGTH, 'File name is too long')
         .refine((val) => {
         const sanitized = val.replace(/\\/g, '/');
         return !sanitized.includes('../') && !sanitized.includes('/..') && !sanitized.startsWith('/');
@@ -35,9 +35,9 @@ const GetMediaQuerySchema = zod_1.z.object({
         if (!val)
             return true;
         const num = parseInt(val, 10);
-        return !isNaN(num) && num > 0 && num <= 5000;
+        return !isNaN(num) && num > 0 && num <= medias_constants_1.MAX_RESIZE_WIDTH_LIMIT;
     }, {
-        message: 'Size must be a positive integer between 1 and 5000',
+        message: `Size must be a positive integer between 1 and ${medias_constants_1.MAX_RESIZE_WIDTH_LIMIT}`,
     }),
 });
 class GetMediaParamsDto extends (0, nestjs_zod_1.createZodDto)(GetMediaParamsSchema) {
