@@ -51,9 +51,36 @@ export interface MediasModuleOptions {
   allowedExtensions?: string[];
 
   /**
-   * Optional: Maximum width for image resizing (default: 5000)
+   * Optional: Maximum width for image resizing in pixels (default: 1200)
+   *
+   * This limits the maximum width that can be requested for resized images.
+   * Setting a realistic limit helps prevent excessive memory and CPU usage.
+   *
+   * @default 1200
    */
   maxResizeWidth?: number;
+
+  /**
+   * Optional: Prevent upscaling images beyond their original width (default: true)
+   *
+   * When true, if a requested size exceeds the original image width,
+   * the image will be resized to its original width instead of upscaling.
+   * This prevents quality degradation and unnecessary CPU usage.
+   *
+   * @default true
+   */
+  autoPreventUpscale?: boolean;
+
+  /**
+   * Optional: Maximum size in bytes for original images to be resized on-the-fly (default: 15MB)
+   *
+   * Images larger than this limit will throw an error when resize is requested.
+   * This protects against "image bombs" and excessive memory usage during resize operations.
+   * Set to 0 to disable this check (not recommended for production).
+   *
+   * @default 15728640 (15MB)
+   */
+  maxOriginalFileSize?: number;
 
   /**
    * Optional: Log level for the medias module (default: 'none')
