@@ -1,4 +1,4 @@
-import { ModuleMetadata, Type } from '@nestjs/common';
+import { LogLevel, ModuleMetadata, Type } from '@nestjs/common';
 export interface S3Options {
     endPoint: string;
     port: number;
@@ -8,12 +8,14 @@ export interface S3Options {
     region: string;
     bucketName: string;
 }
+export type MediasLogLevel = LogLevel | 'none';
 export interface MediasModuleOptions {
     s3: S3Options;
     registerController?: boolean;
     routePrefix?: string;
     allowedExtensions?: string[];
     maxResizeWidth?: number;
+    logLevel?: MediasLogLevel;
 }
 export interface MediasModuleOptionsFactory {
     createMediasModuleOptions(): Promise<MediasModuleOptions> | MediasModuleOptions;

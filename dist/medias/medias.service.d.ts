@@ -24,7 +24,15 @@ export interface MediaStatResult {
 export declare class MediasService {
     private readonly minioService;
     private readonly options;
+    private readonly logger;
+    private readonly logLevel;
     constructor(minioService: MinioService, options: MediasModuleOptions);
+    private shouldLog;
+    private logError;
+    private logWarn;
+    private logInfo;
+    private logDebug;
+    private logVerbose;
     private getBucketName;
     isImage(fileName: string): boolean;
     isResizable(fileName: string): boolean;

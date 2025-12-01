@@ -1,4 +1,4 @@
-import { ModuleMetadata, Type } from '@nestjs/common';
+import { LogLevel, ModuleMetadata, Type } from '@nestjs/common';
 
 /**
  * S3/MinIO configuration options
@@ -12,6 +12,17 @@ export interface S3Options {
   region: string;
   bucketName: string;
 }
+
+/**
+ * Log level for the medias module
+ * - 'none': No logging
+ * - 'error': Only errors
+ * - 'warn': Errors and warnings
+ * - 'log': Errors, warnings, and general info (default)
+ * - 'debug': All above plus debug info (cache hits, ETags, etc.)
+ * - 'verbose': All logs including detailed step-by-step traces
+ */
+export type MediasLogLevel = LogLevel | 'none';
 
 /**
  * Medias module configuration options
@@ -49,6 +60,18 @@ export interface MediasModuleOptions {
    * Optional: Maximum width for image resizing (default: 5000)
    */
   maxResizeWidth?: number;
+
+  /**
+   * Optional: Log level for the medias module (default: 'none')
+   *
+   * - 'none': No logging (default)
+   * - 'error': Only errors
+   * - 'warn': Errors and warnings
+   * - 'log': Errors, warnings, and general info
+   * - 'debug': All above plus debug info (cache hits, ETags, etc.)
+   * - 'verbose': All logs including detailed step-by-step traces
+   */
+  logLevel?: MediasLogLevel;
 }
 
 /**

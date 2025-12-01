@@ -1,11 +1,11 @@
-import { BadRequestException, Inject, Injectable, InternalServerErrorException, NotFoundException } from '@nestjs/common';
-import { MinioService } from 'nestjs-minio-client';
-import { Readable } from 'stream';
+import { BadRequestException, Inject, Injectable, InternalServerErrorException, Logger, NotFoundException } from '@nestjs/common';
 import * as crypto from 'crypto';
+import { MinioService } from 'nestjs-minio-client';
 import * as path from 'path';
 import sharp from 'sharp';
-import { MEDIAS_MODULE_OPTIONS, MIME_TYPES, IMAGE_EXTENSIONS, RESIZABLE_IMAGE_EXTENSIONS } from './medias.constants';
-import { MediasModuleOptions } from './interfaces/medias-module-options.interface';
+import { Readable } from 'stream';
+import { MediasLogLevel, MediasModuleOptions } from './interfaces/medias-module-options.interface';
+import { IMAGE_EXTENSIONS, MEDIAS_MODULE_OPTIONS, MIME_TYPES, RESIZABLE_IMAGE_EXTENSIONS } from './medias.constants';
 
 /**
  * Response type for streaming media
@@ -39,17 +39,73 @@ export interface MediaStatResult {
   metaData: Record<string, string>;
 }
 
+// Log level priority for comparison
+const LOG_LEVEL_PRIORITY: Record<MediasLogLevel, number> = {
+  none: -1,
+  fatal: 0,
+  error: 1,
+  warn: 2,
+  log: 3,
+  debug: 4,
+  verbose: 5,
+};
+
 @Injectable()
 export class MediasService {
+  private readonly logger = new Logger(MediasService.name);
+  private readonly logLevel: MediasLogLevel;
+
   constructor(
     private readonly minioService: MinioService,
     @Inject(MEDIAS_MODULE_OPTIONS)
     private readonly options: MediasModuleOptions,
-  ) {}
+  ) {
+    this.logLevel = options.logLevel ?? 'none';
+    this.logVerbose('MediasService initialized', { logLevel: this.logLevel, bucket: options.s3.bucketName });
+  }
+
+  // ============================================
+  // Logging Helpers
+  // ============================================
+
+  private shouldLog(level: MediasLogLevel): boolean {
+    return LOG_LEVEL_PRIORITY[level] <= LOG_LEVEL_PRIORITY[this.logLevel];
+  }
+
+  private logError(message: string, context?: Record<string, unknown>): void {
+    if (this.shouldLog('error')) {
+      this.logger.error(context ? `${message} ${JSON.stringify(context)}` : message);
+    }
+  }
+
+  private logWarn(message: string, context?: Record<string, unknown>): void {
+    if (this.shouldLog('warn')) {
+      this.logger.warn(context ? `${message} ${JSON.stringify(context)}` : message);
+    }
+  }
+
+  private logInfo(message: string, context?: Record<string, unknown>): void {
+    if (this.shouldLog('log')) {
+      this.logger.log(context ? `${message} ${JSON.stringify(context)}` : message);
+    }
+  }
+
+  private logDebug(message: string, context?: Record<string, unknown>): void {
+    if (this.shouldLog('debug')) {
+      this.logger.debug(context ? `${message} ${JSON.stringify(context)}` : message);
+    }
+  }
+
+  private logVerbose(message: string, context?: Record<string, unknown>): void {
+    if (this.shouldLog('verbose')) {
+      this.logger.verbose(context ? `${message} ${JSON.stringify(context)}` : message);
+    }
+  }
 
   private getBucketName(): string {
     const bucketName = this.options.s3.bucketName;
     if (!bucketName) {
+      this.logError('S3 bucket name not configured');
       throw new InternalServerErrorException('S3 bucket name not configured');
     }
     return bucketName;
@@ -111,13 +167,19 @@ export class MediasService {
    * @returns Media stream with metadata
    */
   async getMediaStream(fileName: string, ifNoneMatch?: string): Promise<MediaStreamResponse> {
+    this.logVerbose('getMediaStream called', { fileName, hasIfNoneMatch: !!ifNoneMatch });
+
     const ext = path.extname(fileName);
     const mimeType = this.getMimeType(ext);
+    this.logVerbose('Determined MIME type', { fileName, ext, mimeType });
 
+    this.logVerbose('Fetching file stat', { fileName });
     const stat = await this.getMediaStat(fileName);
     const etag = this.generateETag(fileName, stat.lastModified, stat.size);
+    this.logDebug('File stat retrieved', { fileName, size: stat.size, etag });
 
     if (ifNoneMatch === etag) {
+      this.logDebug('Cache hit - returning 304 Not Modified', { fileName, etag });
       return {
         stream: null as unknown as Readable,
         mimeType,
@@ -128,7 +190,9 @@ export class MediasService {
       };
     }
 
+    this.logVerbose('Cache miss - fetching file stream', { fileName });
     const stream = await this.getMediaFileStream(fileName);
+    this.logInfo('Serving media stream', { fileName, size: stat.size, mimeType });
 
     return {
       stream,
@@ -147,6 +211,9 @@ export class MediasService {
    * @returns Buffer containing the file contents
    */
   async getMedia(fileName: string): Promise<Buffer> {
+    this.logVerbose('getMedia called - loading file into buffer', { fileName });
+    this.logWarn('Loading entire file into memory', { fileName });
+
     try {
       const fileStream = await this.getMediaFileStream(fileName);
 
@@ -158,15 +225,21 @@ export class MediasService {
         });
 
         fileStream.on('end', () => {
-          resolve(Buffer.concat(chunks));
+          const buffer = Buffer.concat(chunks);
+          this.logDebug('File loaded into buffer', { fileName, size: buffer.length });
+          resolve(buffer);
         });
 
-        fileStream.on('error', reject);
+        fileStream.on('error', (error) => {
+          this.logError('Error reading file stream', { fileName, error: error.message });
+          reject(error);
+        });
       });
     } catch (error) {
       if (error instanceof NotFoundException) {
         throw error;
       }
+      this.logError('Failed to get media', { fileName, error: error instanceof Error ? error.message : 'Unknown error' });
       throw new NotFoundException(`File with name ${fileName} not found`);
     }
   }
@@ -175,10 +248,13 @@ export class MediasService {
    * Get raw file stream from S3
    */
   async getMediaFileStream(fileName: string): Promise<Readable> {
+    this.logVerbose('Fetching file stream from S3', { fileName, bucket: this.getBucketName() });
     try {
       const fileStream = (await this.minioService.client.getObject(this.getBucketName(), fileName)) as Readable;
+      this.logVerbose('File stream obtained', { fileName });
       return fileStream;
-    } catch {
+    } catch (error) {
+      this.logError('File not found in S3', { fileName, error: error instanceof Error ? error.message : 'Unknown error' });
       throw new NotFoundException(`File with name ${fileName} not found`);
     }
   }
@@ -187,9 +263,13 @@ export class MediasService {
    * Get file metadata (size, content-type, etc.)
    */
   async getMediaStat(fileName: string): Promise<MediaStatResult> {
+    this.logVerbose('Fetching file stat from S3', { fileName });
     try {
-      return await this.minioService.client.statObject(this.getBucketName(), fileName);
-    } catch {
+      const stat = await this.minioService.client.statObject(this.getBucketName(), fileName);
+      this.logVerbose('File stat obtained', { fileName, size: stat.size });
+      return stat;
+    } catch (error) {
+      this.logError('File stat not found', { fileName, error: error instanceof Error ? error.message : 'Unknown error' });
       throw new NotFoundException(`File with name ${fileName} not found`);
     }
   }
@@ -198,14 +278,18 @@ export class MediasService {
    * Upload any media file to S3
    */
   async uploadMedia(fileName: string, file: Buffer): Promise<void> {
+    this.logVerbose('Uploading file to S3', { fileName, size: file.length });
     await this.minioService.client.putObject(this.getBucketName(), fileName, file);
+    this.logInfo('File uploaded to S3', { fileName, size: file.length });
   }
 
   /**
    * Delete any media file from S3
    */
   async deleteMedia(fileName: string): Promise<void> {
+    this.logVerbose('Deleting file from S3', { fileName });
     await this.minioService.client.removeObject(this.getBucketName(), fileName);
+    this.logInfo('File deleted from S3', { fileName });
   }
 
   // ============================================
@@ -219,7 +303,9 @@ export class MediasService {
    * @param ifNoneMatch ETag for cache validation
    */
   async getImageStream(fileName: string, ifNoneMatch?: string): Promise<MediaStreamResponse> {
+    this.logVerbose('getImageStream called', { fileName });
     if (!this.isImage(fileName)) {
+      this.logWarn('Attempted to get non-image file as image', { fileName });
       throw new BadRequestException(`File ${fileName} is not an image. Use getMediaStream() for non-image files.`);
     }
     return this.getMediaStream(fileName, ifNoneMatch);
@@ -236,18 +322,23 @@ export class MediasService {
    * @throws BadRequestException if file is not a resizable image
    */
   async getResizedImage(fileName: string, size: number, ifNoneMatch?: string): Promise<MediaBufferResponse> {
+    this.logVerbose('getResizedImage called', { fileName, size, hasIfNoneMatch: !!ifNoneMatch });
+
     // Validate that file is resizable
     if (!this.isResizable(fileName)) {
       const ext = path.extname(fileName).toLowerCase();
       if (this.isImage(fileName)) {
+        this.logWarn('Attempted to resize unsupported image format', { fileName, ext });
         throw new BadRequestException(`Image format ${ext} does not support resizing. Supported formats: ${RESIZABLE_IMAGE_EXTENSIONS.join(', ')}`);
       }
+      this.logWarn('Attempted to resize non-image file', { fileName });
       throw new BadRequestException(`Cannot resize non-image file ${fileName}. Resize is only supported for images.`);
     }
 
     // Validate size
     const maxWidth = this.options.maxResizeWidth || 5000;
     if (size > maxWidth) {
+      this.logWarn('Resize size exceeds maximum', { fileName, size, maxWidth });
       throw new BadRequestException(`Size cannot exceed ${maxWidth} pixels`);
     }
 
@@ -256,13 +347,17 @@ export class MediasService {
     const dirName = path.dirname(fileName);
     const resizedFileName = dirName === '.' ? `${baseName}-${size}${ext}` : `${dirName}/${baseName}-${size}${ext}`;
     const mimeType = this.getMimeType(ext);
+    this.logVerbose('Computed resized file name', { originalFileName: fileName, resizedFileName, size });
 
     // Try to get cached resized image
+    this.logVerbose('Checking for cached resized image', { resizedFileName });
     try {
       const stat = await this.getMediaStat(resizedFileName);
       const etag = this.generateETag(resizedFileName, stat.lastModified, stat.size);
+      this.logDebug('Cached resized image found', { resizedFileName, size: stat.size, etag });
 
       if (ifNoneMatch === etag) {
+        this.logDebug('Cache hit on resized image - returning 304 Not Modified', { resizedFileName, etag });
         return {
           buffer: null as unknown as Buffer,
           mimeType,
@@ -271,6 +366,7 @@ export class MediasService {
         };
       }
 
+      this.logInfo('Serving cached resized image', { resizedFileName, size: stat.size });
       const buffer = await this.getMedia(resizedFileName);
       return {
         buffer,
@@ -279,15 +375,21 @@ export class MediasService {
         notModified: false,
       };
     } catch {
-      // Cached version not found, generate it
+      this.logDebug('No cached resized image found, will generate', { resizedFileName });
     }
 
     // Generate resized image
+    this.logVerbose('Fetching original image for resize', { fileName });
     const originalFile = await this.getMedia(fileName);
+    this.logDebug('Original image loaded', { fileName, originalSize: originalFile.length });
+
+    this.logVerbose('Resizing image with Sharp', { fileName, targetWidth: size });
     const resizedBuffer = await sharp(originalFile).resize(size).toBuffer();
     const etag = this.generateETagFromBuffer(resizedBuffer);
+    this.logDebug('Image resized', { fileName, originalSize: originalFile.length, resizedSize: resizedBuffer.length, etag });
 
     if (ifNoneMatch === etag) {
+      this.logDebug('Generated image matches ETag - returning 304 Not Modified', { fileName, etag });
       return {
         buffer: null as unknown as Buffer,
         mimeType,
@@ -297,10 +399,12 @@ export class MediasService {
     }
 
     // Upload to S3 asynchronously (fire-and-forget)
-    this.uploadMedia(resizedFileName, resizedBuffer).catch(() => {
-      // Silently fail - caching is optional
+    this.logVerbose('Caching resized image to S3 (async)', { resizedFileName });
+    this.uploadMedia(resizedFileName, resizedBuffer).catch((error) => {
+      this.logWarn('Failed to cache resized image', { resizedFileName, error: error instanceof Error ? error.message : 'Unknown error' });
     });
 
+    this.logInfo('Serving freshly resized image', { fileName, size, resizedSize: resizedBuffer.length });
     return {
       buffer: resizedBuffer,
       mimeType,
