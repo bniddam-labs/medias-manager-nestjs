@@ -1,6 +1,6 @@
 import { createZodDto } from 'nestjs-zod';
 import { z } from 'zod';
-import { ALL_MEDIA_EXTENSIONS } from '../medias.constants';
+import { ALL_MEDIA_EXTENSIONS, MAX_FILENAME_LENGTH } from '../medias.constants';
 
 /**
  * Zod schema for delete media path parameters with security validation
@@ -9,7 +9,7 @@ const DeleteMediaParamsSchema = z.object({
   fileName: z
     .string()
     .min(1, 'File name is required')
-    .max(255, 'File name is too long')
+    .max(MAX_FILENAME_LENGTH, 'File name is too long')
     .refine(
       (val) => {
         // Prevent path traversal attacks

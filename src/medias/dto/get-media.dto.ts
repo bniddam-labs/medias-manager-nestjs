@@ -1,6 +1,6 @@
 import { createZodDto } from 'nestjs-zod';
 import { z } from 'zod';
-import { ALL_MEDIA_EXTENSIONS } from '../medias.constants';
+import { ALL_MEDIA_EXTENSIONS, MAX_FILENAME_LENGTH, MAX_RESIZE_WIDTH_LIMIT } from '../medias.constants';
 
 /**
  * Zod schema for media file path parameters with security validation
@@ -10,7 +10,7 @@ const GetMediaParamsSchema = z.object({
   fileName: z
     .string()
     .min(1, 'File name is required')
-    .max(255, 'File name is too long')
+    .max(MAX_FILENAME_LENGTH, 'File name is too long')
     .refine(
       (val) => {
         // Prevent path traversal attacks
@@ -53,10 +53,10 @@ const GetMediaQuerySchema = z.object({
       (val) => {
         if (!val) return true;
         const num = parseInt(val, 10);
-        return !isNaN(num) && num > 0 && num <= 5000;
+        return !isNaN(num) && num > 0 && num <= MAX_RESIZE_WIDTH_LIMIT;
       },
       {
-        message: 'Size must be a positive integer between 1 and 5000',
+        message: `Size must be a positive integer between 1 and ${MAX_RESIZE_WIDTH_LIMIT}`,
       },
     ),
 });

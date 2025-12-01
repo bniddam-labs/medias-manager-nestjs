@@ -2,6 +2,7 @@ import { BadRequestException, Controller, Delete, Get, InternalServerErrorExcept
 import { Request, Response } from 'express';
 import { DeleteMediaParamsDto } from './dto/delete-media.dto';
 import { GetMediaParamsDto, GetMediaQueryDto } from './dto/get-media.dto';
+import { HTTP_STATUS } from './medias.constants';
 import { MediasService } from './medias.service';
 
 @Controller('medias')
@@ -33,7 +34,7 @@ export class MediasController {
         const result = await this.mediasService.getResizedImage(fileName, requestedSize, ifNoneMatch);
 
         if (result.notModified) {
-          res.status(304).end();
+          res.status(HTTP_STATUS.NOT_MODIFIED).end();
           return;
         }
 
@@ -48,7 +49,7 @@ export class MediasController {
         const result = await this.mediasService.getMediaStream(fileName, ifNoneMatch);
 
         if (result.notModified) {
-          res.status(304).end();
+          res.status(HTTP_STATUS.NOT_MODIFIED).end();
           return;
         }
 
@@ -64,7 +65,7 @@ export class MediasController {
         result.stream.on('error', (error) => {
           this.logger.error(`Stream error: ${error.message}`);
           if (!res.headersSent) {
-            res.status(500).end();
+            res.status(HTTP_STATUS.INTERNAL_SERVER_ERROR).end();
           }
         });
       }
