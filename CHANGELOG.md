@@ -7,6 +7,45 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.3.0] - 2025-12-01
+
+### Added
+- **Pre-generation at upload** (`preGeneration` option)
+  - Automatically generate common image sizes when uploading
+  - Configure sizes to pre-generate: `preGeneration: { sizes: [200, 400, 800] }`
+  - Optional `dispatchJob` callback for external queue integration (Bull, BullMQ, etc.)
+  - Best-effort: errors don't fail uploads
+- **Streaming resize** (`getResizedImageStream()` method)
+  - Low-memory alternative to `getResizedImage()`
+  - Processes images on-the-fly without loading full buffer
+  - Does not cache to S3 (suitable for infrequent access)
+  - Full ETag support for 304 responses
+- **Content negotiation** (`enableContentNegotiation` option)
+  - Serve optimal format based on Accept header (AVIF > WebP > JPEG)
+  - `preferredFormat` option for default format
+  - `allowWebp` and `allowAvif` options
+- **Event hooks** for monitoring and analytics
+  - `onImageResized`: Fired when an image is resized
+  - `onCacheHit`: Fired when a cached resource is served
+  - `onUploaded`: Fired when a file is uploaded
+- **S3 operation retry logic** with exponential backoff for transient errors
+- **Image metadata enrichment** on upload (width, height, MIME type stored in S3 metadata)
+- Exported `PreGenerateJob`, `ImageResizedEvent`, `CacheHitEvent`, `FileUploadedEvent` types
+- Exported `ImageFormat` type and format constants
+
+### Changed
+- `uploadMedia()` now accepts optional `originalName` parameter for metadata
+- `getResizedImage()` now accepts optional `format` parameter for explicit format conversion
+
+## [3.2.0] - 2025-12-01
+
+### Added
+- **Resource protection options**
+  - `maxResizeWidth`: Maximum width for resized images (default: 1200px)
+  - `autoPreventUpscale`: Prevent upscaling beyond original dimensions (default: true)
+  - `maxOriginalFileSize`: Reject resize for images >15MB (configurable)
+- Validation helpers factored out for reuse between buffer and stream methods
+
 ## [3.1.2] - 2025-12-01
 
 ### Added

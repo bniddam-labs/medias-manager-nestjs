@@ -531,10 +531,7 @@ let MediasService = MediasService_1 = class MediasService {
         }
         return this.getMediaStream(fileName, ifNoneMatch);
     }
-    async getResizedImage(fileName, size, ifNoneMatch, format) {
-        const startTime = Date.now();
-        const outputFormat = format ?? this.options.preferredFormat ?? 'original';
-        this.logVerbose('getResizedImage called', { fileName, size, outputFormat, hasIfNoneMatch: !!ifNoneMatch });
+    validateResizable(fileName) {
         if (!this.isResizable(fileName)) {
             const ext = path.extname(fileName).toLowerCase();
             if (this.isImage(fileName)) {
@@ -544,11 +541,20 @@ let MediasService = MediasService_1 = class MediasService {
             this.logWarn('Attempted to resize non-image file', { fileName });
             throw new common_1.BadRequestException(`Cannot resize non-image file ${fileName}. Resize is only supported for images.`);
         }
+    }
+    validateResizeSize(fileName, size) {
         const maxWidth = this.options.maxResizeWidth ?? medias_constants_1.DEFAULT_MAX_RESIZE_WIDTH;
         if (size > maxWidth) {
             this.logWarn('Resize size exceeds maximum', { fileName, size, maxWidth });
             throw new common_1.BadRequestException(`Size cannot exceed ${maxWidth} pixels`);
         }
+    }
+    async getResizedImage(fileName, size, ifNoneMatch, format) {
+        const startTime = Date.now();
+        const outputFormat = format ?? this.options.preferredFormat ?? 'original';
+        this.logVerbose('getResizedImage called', { fileName, size, outputFormat, hasIfNoneMatch: !!ifNoneMatch });
+        this.validateResizable(fileName);
+        this.validateResizeSize(fileName, size);
         const stat = await this.getMediaStat(fileName);
         const maxOriginalSize = this.options.maxOriginalFileSize ?? medias_constants_1.DEFAULT_MAX_ORIGINAL_FILE_SIZE;
         if (maxOriginalSize > 0 && stat.size > maxOriginalSize) {
@@ -663,6 +669,47 @@ let MediasService = MediasService_1 = class MediasService {
             buffer: resizedBuffer,
             mimeType,
             etag,
+            notModified: false,
+        };
+    }
+    async getResizedImageStream(fileName, size, ifNoneMatch, format) {
+        const outputFormat = format ?? this.options.preferredFormat ?? 'original';
+        this.logVerbose('getResizedImageStream called', { fileName, size, outputFormat, hasIfNoneMatch: !!ifNoneMatch });
+        this.validateResizable(fileName);
+        this.validateResizeSize(fileName, size);
+        const stat = await this.getMediaStat(fileName);
+        const etag = this.generateETag(`${fileName}-${size}-${outputFormat}`, stat.lastModified, stat.size);
+        this.logDebug('Generated ETag for streaming resize', { fileName, size, etag });
+        if (ifNoneMatch === etag) {
+            this.logDebug('Cache hit - returning 304 Not Modified', { fileName, size, etag });
+            this.options.onCacheHit?.({
+                fileName,
+                size,
+                notModified: true,
+            });
+            return {
+                stream: null,
+                mimeType: this.getMimeTypeForFormat(outputFormat, path.extname(fileName)),
+                size: 0,
+                etag,
+                lastModified: stat.lastModified,
+                notModified: true,
+            };
+        }
+        this.logVerbose('Fetching original image stream for resize', { fileName });
+        const originalStream = await this.getMediaFileStream(fileName);
+        this.logVerbose('Creating streaming resize pipeline', { fileName, size, outputFormat });
+        let resizePipeline = (0, sharp_1.default)().resize(size);
+        resizePipeline = this.applyFormat(resizePipeline, outputFormat);
+        const resizedStream = originalStream.pipe(resizePipeline);
+        const mimeType = this.getMimeTypeForFormat(outputFormat, path.extname(fileName));
+        this.logInfo('Serving streaming resized image', { fileName, size, outputFormat });
+        return {
+            stream: resizedStream,
+            mimeType,
+            size: 0,
+            etag,
+            lastModified: stat.lastModified,
             notModified: false,
         };
     }

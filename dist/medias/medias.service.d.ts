@@ -56,6 +56,9 @@ export declare class MediasService {
     private triggerPreGeneration;
     deleteMedia(fileName: string): Promise<void>;
     getImageStream(fileName: string, ifNoneMatch?: string): Promise<MediaStreamResponse>;
+    private validateResizable;
+    private validateResizeSize;
     getResizedImage(fileName: string, size: number, ifNoneMatch?: string, format?: ImageFormat): Promise<MediaBufferResponse>;
+    getResizedImageStream(fileName: string, size: number, ifNoneMatch?: string, format?: ImageFormat): Promise<MediaStreamResponse>;
 }
 //# sourceMappingURL=medias.service.d.ts.map

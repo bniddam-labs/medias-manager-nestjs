@@ -743,6 +743,38 @@ export class MediasService {
     return this.getMediaStream(fileName, ifNoneMatch);
   }
 
+  // ============================================
+  // Validation Helpers (shared between buffer and stream resize)
+  // ============================================
+
+  /**
+   * Validate that a file can be resized
+   * @throws BadRequestException if file is not resizable
+   */
+  private validateResizable(fileName: string): void {
+    if (!this.isResizable(fileName)) {
+      const ext = path.extname(fileName).toLowerCase();
+      if (this.isImage(fileName)) {
+        this.logWarn('Attempted to resize unsupported image format', { fileName, ext });
+        throw new BadRequestException(`Image format ${ext} does not support resizing. Supported formats: ${RESIZABLE_IMAGE_EXTENSIONS.join(', ')}`);
+      }
+      this.logWarn('Attempted to resize non-image file', { fileName });
+      throw new BadRequestException(`Cannot resize non-image file ${fileName}. Resize is only supported for images.`);
+    }
+  }
+
+  /**
+   * Validate that resize size is within allowed limits
+   * @throws BadRequestException if size exceeds maxResizeWidth
+   */
+  private validateResizeSize(fileName: string, size: number): void {
+    const maxWidth = this.options.maxResizeWidth ?? DEFAULT_MAX_RESIZE_WIDTH;
+    if (size > maxWidth) {
+      this.logWarn('Resize size exceeds maximum', { fileName, size, maxWidth });
+      throw new BadRequestException(`Size cannot exceed ${maxWidth} pixels`);
+    }
+  }
+
   /**
    * Get resized image with automatic caching
    * Only works with resizable image formats (PNG, JPG, JPEG, GIF, WebP, AVIF, TIFF)
@@ -763,22 +795,10 @@ export class MediasService {
     this.logVerbose('getResizedImage called', { fileName, size, outputFormat, hasIfNoneMatch: !!ifNoneMatch });
 
     // Validate that file is resizable
-    if (!this.isResizable(fileName)) {
-      const ext = path.extname(fileName).toLowerCase();
-      if (this.isImage(fileName)) {
-        this.logWarn('Attempted to resize unsupported image format', { fileName, ext });
-        throw new BadRequestException(`Image format ${ext} does not support resizing. Supported formats: ${RESIZABLE_IMAGE_EXTENSIONS.join(', ')}`);
-      }
-      this.logWarn('Attempted to resize non-image file', { fileName });
-      throw new BadRequestException(`Cannot resize non-image file ${fileName}. Resize is only supported for images.`);
-    }
+    this.validateResizable(fileName);
 
     // Validate size
-    const maxWidth = this.options.maxResizeWidth ?? DEFAULT_MAX_RESIZE_WIDTH;
-    if (size > maxWidth) {
-      this.logWarn('Resize size exceeds maximum', { fileName, size, maxWidth });
-      throw new BadRequestException(`Size cannot exceed ${maxWidth} pixels`);
-    }
+    this.validateResizeSize(fileName, size);
 
     // Check original file size to prevent processing of excessively large files
     const stat = await this.getMediaStat(fileName);
@@ -927,6 +947,95 @@ export class MediasService {
       buffer: resizedBuffer,
       mimeType,
       etag,
+      notModified: false,
+    };
+  }
+
+  /**
+   * Get resized image as a stream (low-memory / high-throughput mode)
+   * Alternative to getResizedImage for large images or high-traffic scenarios
+   *
+   * **Key differences from getResizedImage:**
+   * - Returns a stream instead of a buffer (memory-efficient)
+   * - Does NOT cache resized variants to S3
+   * - Processes image on-the-fly for each request
+   * - Suitable for large images or infrequent access patterns
+   *
+   * **Use cases:**
+   * - Very large images (> 15MB) that exceed maxOriginalFileSize
+   * - High-throughput scenarios where memory is constrained
+   * - Images that are accessed infrequently (no benefit from caching)
+   *
+   * @param fileName Original file name
+   * @param size Desired width in pixels
+   * @param ifNoneMatch ETag for cache validation
+   * @param format Optional output format (overrides preferredFormat option)
+   * @returns Stream with resized image and metadata
+   * @throws BadRequestException if file is not a resizable image
+   */
+  async getResizedImageStream(fileName: string, size: number, ifNoneMatch?: string, format?: ImageFormat): Promise<MediaStreamResponse> {
+    // Determine the output format (parameter > option > original)
+    const outputFormat = format ?? this.options.preferredFormat ?? 'original';
+
+    this.logVerbose('getResizedImageStream called', { fileName, size, outputFormat, hasIfNoneMatch: !!ifNoneMatch });
+
+    // Validate that file is resizable
+    this.validateResizable(fileName);
+
+    // Validate size
+    this.validateResizeSize(fileName, size);
+
+    // Get original file metadata for ETag generation
+    const stat = await this.getMediaStat(fileName);
+
+    // Generate ETag based on original file metadata + requested size
+    // This allows 304 responses even though we don't cache the resized version
+    const etag = this.generateETag(`${fileName}-${size}-${outputFormat}`, stat.lastModified, stat.size);
+    this.logDebug('Generated ETag for streaming resize', { fileName, size, etag });
+
+    // Check for 304 Not Modified
+    if (ifNoneMatch === etag) {
+      this.logDebug('Cache hit - returning 304 Not Modified', { fileName, size, etag });
+
+      // Fire onCacheHit hook
+      this.options.onCacheHit?.({
+        fileName,
+        size,
+        notModified: true,
+      });
+
+      return {
+        stream: null as unknown as Readable,
+        mimeType: this.getMimeTypeForFormat(outputFormat, path.extname(fileName)),
+        size: 0,
+        etag,
+        lastModified: stat.lastModified,
+        notModified: true,
+      };
+    }
+
+    // Get original image stream
+    this.logVerbose('Fetching original image stream for resize', { fileName });
+    const originalStream = await this.getMediaFileStream(fileName);
+
+    // Create Sharp resize pipeline
+    this.logVerbose('Creating streaming resize pipeline', { fileName, size, outputFormat });
+    let resizePipeline = sharp().resize(size);
+    resizePipeline = this.applyFormat(resizePipeline, outputFormat);
+
+    // Pipe original stream through Sharp
+    const resizedStream = originalStream.pipe(resizePipeline);
+
+    const mimeType = this.getMimeTypeForFormat(outputFormat, path.extname(fileName));
+
+    this.logInfo('Serving streaming resized image', { fileName, size, outputFormat });
+
+    return {
+      stream: resizedStream,
+      mimeType,
+      size: 0, // Unknown size for streaming
+      etag,
+      lastModified: stat.lastModified,
       notModified: false,
     };
   }

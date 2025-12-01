@@ -12,9 +12,10 @@
 | 🗄️ **Multi-Media Support**  | Images, videos, audio, documents, and archives         |
 | ☁️ **S3/MinIO Integration** | Works with AWS S3, MinIO, DigitalOcean Spaces, etc.    |
 | 🖼️ **On-Demand Resizing**   | Automatic image resizing with Sharp                    |
+| 🚀 **Pre-generation**       | Generate common sizes at upload time                   |
+| 🌊 **Streaming Resize**     | Low-memory mode for large images                       |
 | 💾 **Smart Caching**        | Resized images cached to S3 automatically              |
 | ⚡ **HTTP Caching**         | ETag support for 304 responses (99% bandwidth savings) |
-| 🌊 **Streaming**            | Memory-efficient streaming for large files             |
 | 🔒 **Security First**       | Path traversal prevention, file type validation        |
 | 📦 **Zero Config**          | Sensible defaults, optional controller                 |
 | 🔧 **TypeScript**           | Full type safety with strict mode                      |
@@ -293,6 +294,66 @@ if (mediasService.isResizable('video.mp4')) {
 }
 ```
 
+### 🚀 Pre-generation at Upload
+
+Reduce latency by generating common image sizes at upload time instead of on first request:
+
+```typescript
+MediasModule.forRoot({
+  s3: { /* ... */ },
+  preGeneration: {
+    sizes: [200, 400, 800],  // Sizes to pre-generate
+  },
+});
+```
+
+**With external queue (recommended for production):**
+
+```typescript
+MediasModule.forRoot({
+  s3: { /* ... */ },
+  preGeneration: {
+    sizes: [200, 400, 800],
+    dispatchJob: async (job) => {
+      // Delegate to Bull, BullMQ, RabbitMQ, etc.
+      await imageQueue.add('resize', job);
+    },
+  },
+});
+```
+
+**Behavior:**
+- Original is always uploaded first
+- Pre-generation runs in background (fire-and-forget)
+- Errors don't fail the upload (best effort)
+- `getResizedImage()` still works as fallback if pre-generation fails
+
+### 🌊 Streaming Resize (Low-Memory Mode)
+
+For large images or high-throughput scenarios, use streaming resize:
+
+```typescript
+// Standard (buffer + cache) - recommended for most cases
+const result = await mediasService.getResizedImage(fileName, 800);
+res.send(result.buffer);
+
+// Streaming (no cache) - for large files or memory constraints
+const result = await mediasService.getResizedImageStream(fileName, 800);
+result.stream.pipe(res);
+```
+
+**When to use streaming:**
+- Very large images (>15MB)
+- High-throughput, memory-constrained environments
+- Infrequently accessed images (no caching benefit)
+
+**Trade-offs:**
+
+| Method              | Memory Usage | Caches to S3 | Content-Length | Best For                    |
+| ------------------- | ------------ | ------------ | -------------- | --------------------------- |
+| `getResizedImage`   | Higher       | ✅ Yes       | ✅ Known       | Most use cases              |
+| `getResizedImageStream` | Lower    | ❌ No        | ❌ Unknown     | Large files, high throughput |
+
 ---
 
 ## 📡 HTTP Caching
@@ -389,17 +450,19 @@ Works great with **[@bniddam-labs/lazy-media-vuejs](https://github.com/bniddam-l
 
 ### MediasService Methods
 
-| Method                                          | Description                    |
-| ----------------------------------------------- | ------------------------------ |
-| `getMediaStream(fileName, ifNoneMatch?)`        | Stream media with ETag support |
-| `getResizedImage(fileName, size, ifNoneMatch?)` | Get/generate resized image     |
-| `getMedia(fileName)`                            | Get media as Buffer            |
-| `getMediaStat(fileName)`                        | Get file metadata              |
-| `uploadMedia(fileName, buffer)`                 | Upload media to S3             |
-| `deleteMedia(fileName)`                         | Delete media from S3           |
-| `isImage(fileName)`                             | Check if file is an image      |
-| `isResizable(fileName)`                         | Check if file can be resized   |
-| `getMimeType(extension)`                        | Get MIME type for extension    |
+| Method                                                    | Description                              |
+| --------------------------------------------------------- | ---------------------------------------- |
+| `getMediaStream(fileName, ifNoneMatch?)`                  | Stream media with ETag support           |
+| `getResizedImage(fileName, size, ifNoneMatch?, format?)`  | Get/generate resized image (cached)      |
+| `getResizedImageStream(fileName, size, ifNoneMatch?, format?)` | Stream resized image (no cache)     |
+| `getMedia(fileName)`                                      | Get media as Buffer                      |
+| `getMediaStat(fileName)`                                  | Get file metadata                        |
+| `uploadMedia(fileName, buffer, originalName?)`            | Upload media to S3 (with pre-generation) |
+| `deleteMedia(fileName)`                                   | Delete media from S3                     |
+| `isImage(fileName)`                                       | Check if file is an image                |
+| `isResizable(fileName)`                                   | Check if file can be resized             |
+| `getMimeType(extension)`                                  | Get MIME type for extension              |
+| `negotiateFormat(acceptHeader?)`                          | Get best format from Accept header       |
 
 ### Exported Constants
 
