@@ -124,9 +124,31 @@ interface MediasModuleOptions {
     bucketName: string; // Bucket name
   };
   registerController?: boolean; // Enable built-in controller (default: false)
-  maxResizeWidth?: number; // Max resize width in px (default: 5000)
+  maxResizeWidth?: number; // Max resize width in px (default: 1200)
+  autoPreventUpscale?: boolean; // Prevent upscaling beyond original (default: true)
+  maxOriginalFileSize?: number; // Max size in bytes for on-the-fly resize (default: 15MB)
   logLevel?: MediasLogLevel; // Logging verbosity (default: 'none')
 }
+```
+
+### 🛡️ Resource Protection Options
+
+The module includes several options to protect your server from excessive resource usage:
+
+| Option                  | Default | Description                                                         |
+| ----------------------- | ------- | ------------------------------------------------------------------- |
+| `maxResizeWidth`        | `1200`  | Maximum width in pixels for resized images                         |
+| `autoPreventUpscale`    | `true`  | Prevent upscaling images beyond their original width               |
+| `maxOriginalFileSize`   | `15MB`  | Maximum size of original images that can be resized on-the-fly    |
+
+**Example:**
+```typescript
+MediasModule.forRoot({
+  s3: { /* ... */ },
+  maxResizeWidth: 2000,        // Allow up to 2000px wide resizes
+  autoPreventUpscale: true,    // Don't upscale small images
+  maxOriginalFileSize: 20 * 1024 * 1024, // 20MB limit
+});
 ```
 
 ### 📝 Log Levels
@@ -275,7 +297,7 @@ if (mediasService.isResizable('video.mp4')) {
 
 ## 📡 HTTP Caching
 
-The service provides full ETag support:
+The service provides full ETag support for both original and resized images:
 
 ```typescript
 const result = await mediasService.getMediaStream(fileName, ifNoneMatch);
@@ -290,6 +312,21 @@ res.setHeader('Content-Type', result.mimeType);
 result.stream.pipe(res);
 ```
 
+### 🔖 ETag Strategy
+
+The module uses different ETag generation strategies depending on the content type:
+
+| Content Type         | ETag Generation Method                                | Use Case                |
+| -------------------- | ----------------------------------------------------- | ----------------------- |
+| **Original media**   | MD5 hash of `fileName + lastModified + size`         | Stream-based serving    |
+| **Resized images**   | MD5 hash of final resized buffer content              | Buffer-based serving    |
+
+**Benefits:**
+- **Original media**: ETags based on S3 metadata (no content download needed for 304 responses)
+- **Resized images**: ETags based on actual content (deterministic, content-addressable)
+- **99% bandwidth savings** on cache hits with 304 Not Modified responses
+- **Compatible** with CDN and browser caching
+
 ---
 
 ## 🔐 Security
@@ -299,7 +336,9 @@ result.stream.pipe(res);
 - **Path traversal prevention**: `../` patterns blocked
 - **File extension whitelist**: Only allowed media types
 - **Character validation**: Alphanumeric, hyphens, underscores only
-- **Size limits**: Resize width 1-5000px
+- **Resize width limits**: 1-1200px by default (configurable via `maxResizeWidth`)
+- **Upscale prevention**: Images won't be enlarged beyond original dimensions (configurable via `autoPreventUpscale`)
+- **File size limits**: Original files >15MB rejected for resize (configurable via `maxOriginalFileSize`)
 
 ### ⚠️ Your responsibility
 
