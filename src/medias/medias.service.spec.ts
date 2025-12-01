@@ -10,6 +10,11 @@ jest.mock('sharp', () => {
   return jest.fn().mockImplementation(() => ({
     resize: jest.fn().mockReturnThis(),
     toBuffer: jest.fn().mockResolvedValue(Buffer.from('resized image data')),
+    metadata: jest.fn().mockResolvedValue({
+      width: 1920,
+      height: 1080,
+      format: 'jpeg',
+    }),
   }));
 });
 
@@ -194,7 +199,15 @@ describe('MediasService', () => {
         },
       });
 
-      mockMinioClient.statObject.mockRejectedValueOnce(new Error('Not found')); // No cached version
+      // First call: check original file size (succeeds)
+      mockMinioClient.statObject.mockResolvedValueOnce({
+        size: 1024 * 1024, // 1MB, under the default 15MB limit
+        lastModified: new Date('2024-01-01'),
+        etag: 'original-etag',
+        metaData: {},
+      });
+      // Second call: check for cached version (not found)
+      mockMinioClient.statObject.mockRejectedValueOnce(new Error('Not found'));
       mockMinioClient.getObject.mockResolvedValue(mockStream);
       mockMinioClient.putObject.mockResolvedValue({});
 
@@ -207,7 +220,13 @@ describe('MediasService', () => {
 
     it('should return cached version if available', async () => {
       const cachedBuffer = Buffer.from('cached image');
-      const mockStat = {
+      const mockOriginalStat = {
+        size: 1024 * 1024, // 1MB, under the default 15MB limit
+        lastModified: new Date('2024-01-01'),
+        etag: 'original-etag',
+        metaData: {},
+      };
+      const mockCachedStat = {
         size: cachedBuffer.length,
         lastModified: new Date('2024-01-01'),
         etag: 'cached-etag',
@@ -221,7 +240,10 @@ describe('MediasService', () => {
         },
       });
 
-      mockMinioClient.statObject.mockResolvedValue(mockStat);
+      // First call: check original file size (succeeds)
+      mockMinioClient.statObject.mockResolvedValueOnce(mockOriginalStat);
+      // Second call: check for cached version (succeeds)
+      mockMinioClient.statObject.mockResolvedValueOnce(mockCachedStat);
       mockMinioClient.getObject.mockResolvedValue(mockStream);
 
       const result = await service.getResizedImage('photo.jpg', 300);
@@ -232,6 +254,146 @@ describe('MediasService', () => {
 
     it('should throw BadRequestException when size exceeds max', async () => {
       await expect(service.getResizedImage('photo.jpg', 10000)).rejects.toThrow(BadRequestException);
+    });
+
+    it('should throw BadRequestException when original file size exceeds maxOriginalFileSize', async () => {
+      const hugeFileSize = 20 * 1024 * 1024; // 20MB, exceeds default 15MB limit
+      mockMinioClient.statObject.mockResolvedValueOnce({
+        size: hugeFileSize,
+        lastModified: new Date('2024-01-01'),
+        etag: 'huge-file-etag',
+        metaData: {},
+      });
+
+      await expect(service.getResizedImage('huge-photo.jpg', 300)).rejects.toThrow(
+        /Image too large to resize on-the-fly/,
+      );
+    });
+
+    it('should prevent upscaling when autoPreventUpscale is true (default)', async () => {
+      const smallImageWidth = 200; // Original image is 200px wide
+      const requestedSize = 500; // User requests 500px wide
+
+      const mockStream = new Readable({
+        read() {
+          this.push(Buffer.from('small image data'));
+          this.push(null);
+        },
+      });
+
+      // Mock resize spy to track calls
+      const resizeSpy = jest.fn().mockReturnThis();
+      const toBufferSpy = jest.fn().mockResolvedValue(Buffer.from('resized image data'));
+      const metadataSpy = jest.fn().mockResolvedValue({
+        width: smallImageWidth,
+        height: 150,
+        format: 'jpeg',
+      });
+
+      // Mock Sharp for this test - need to mock twice (once for metadata, once for resize)
+      const sharpMock = require('sharp');
+      // First call: for metadata
+      sharpMock.mockImplementationOnce(() => ({
+        resize: jest.fn().mockReturnThis(),
+        toBuffer: jest.fn().mockResolvedValue(Buffer.from('temp')),
+        metadata: metadataSpy,
+      }));
+      // Second call: for actual resize
+      sharpMock.mockImplementationOnce(() => ({
+        resize: resizeSpy,
+        toBuffer: toBufferSpy,
+        metadata: jest.fn(),
+      }));
+
+      // Check original file size (succeeds)
+      mockMinioClient.statObject.mockResolvedValueOnce({
+        size: 1024 * 100, // 100KB
+        lastModified: new Date('2024-01-01'),
+        etag: 'small-etag',
+        metaData: {},
+      });
+      // Check for cached version (not found)
+      mockMinioClient.statObject.mockRejectedValueOnce(new Error('Not found'));
+      mockMinioClient.getObject.mockResolvedValue(mockStream);
+      mockMinioClient.putObject.mockResolvedValue({});
+
+      const result = await service.getResizedImage('small-photo.jpg', requestedSize);
+
+      expect(result.buffer).toBeDefined();
+      // The service should have called resize with the original width (200), not the requested size (500)
+      expect(resizeSpy).toHaveBeenCalledWith(smallImageWidth);
+      expect(resizeSpy).not.toHaveBeenCalledWith(requestedSize);
+    });
+
+    it('should allow upscaling when autoPreventUpscale is false', async () => {
+      // Create a new service instance with autoPreventUpscale disabled
+      const moduleWithUpscaleAllowed: TestingModule = await Test.createTestingModule({
+        providers: [
+          MediasService,
+          {
+            provide: MinioService,
+            useValue: {
+              client: mockMinioClient,
+            },
+          },
+          {
+            provide: MEDIAS_MODULE_OPTIONS,
+            useValue: {
+              ...mockOptions,
+              autoPreventUpscale: false, // Disable upscale prevention
+            },
+          },
+        ],
+      }).compile();
+
+      const serviceWithUpscale = moduleWithUpscaleAllowed.get<MediasService>(MediasService);
+
+      const smallImageWidth = 200;
+      const requestedSize = 500;
+
+      const mockStream = new Readable({
+        read() {
+          this.push(Buffer.from('small image data'));
+          this.push(null);
+        },
+      });
+
+      // Mock resize spy to track calls
+      const resizeSpy = jest.fn().mockReturnThis();
+      const toBufferSpy = jest.fn().mockResolvedValue(Buffer.from('upscaled image data'));
+      const metadataSpy = jest.fn().mockResolvedValue({
+        width: smallImageWidth,
+        height: 150,
+        format: 'jpeg',
+      });
+
+      // Mock Sharp for this test - only need one call since autoPreventUpscale is false
+      // (no metadata check needed)
+      const sharpMock = require('sharp');
+      sharpMock.mockImplementationOnce(() => ({
+        resize: resizeSpy,
+        toBuffer: toBufferSpy,
+        metadata: metadataSpy,
+      }));
+
+      // Check original file size (succeeds)
+      mockMinioClient.statObject.mockResolvedValueOnce({
+        size: 1024 * 100, // 100KB
+        lastModified: new Date('2024-01-01'),
+        etag: 'small-etag',
+        metaData: {},
+      });
+      // Check for cached version (not found)
+      mockMinioClient.statObject.mockRejectedValueOnce(new Error('Not found'));
+      mockMinioClient.getObject.mockResolvedValue(mockStream);
+      mockMinioClient.putObject.mockResolvedValue({});
+
+      const result = await serviceWithUpscale.getResizedImage('small-photo.jpg', requestedSize);
+
+      expect(result.buffer).toBeDefined();
+      // The service should have called resize with the requested size (500), not the original width (200)
+      expect(resizeSpy).toHaveBeenCalledWith(requestedSize);
+      expect(resizeSpy).not.toHaveBeenCalledWith(smallImageWidth);
     });
   });
 
