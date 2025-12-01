@@ -1,9 +1,26 @@
 import { DynamicModule, Module, Provider } from '@nestjs/common';
+import { RouterModule } from '@nestjs/core';
 import { MinioModule } from 'nestjs-minio-client';
 import { MEDIAS_MODULE_OPTIONS } from './medias.constants';
 import { MediasController } from './medias.controller';
 import { MediasService } from './medias.service';
 import { MediasModuleAsyncOptions, MediasModuleOptions, MediasModuleOptionsFactory } from './interfaces/medias-module-options.interface';
+
+/**
+ * Internal module that holds the controller.
+ * This allows RouterModule to apply the route prefix.
+ */
+@Module({
+  controllers: [MediasController],
+})
+class MediasControllerModule {
+  static forRoot(): DynamicModule {
+    return {
+      module: MediasControllerModule,
+      controllers: [MediasController],
+    };
+  }
+}
 
 @Module({})
 export class MediasModule {
@@ -12,16 +29,29 @@ export class MediasModule {
    * @param options Configuration options for the medias module
    */
   static forRoot(options: MediasModuleOptions): DynamicModule {
-    const controllers = options.registerController ? [MediasController] : [];
+    const routePrefix = options.routePrefix ?? 'medias';
+    const imports: DynamicModule['imports'] = [
+      MinioModule.register({
+        ...options.s3,
+      }),
+    ];
+
+    // If controller is requested, set up the controller module with route prefix
+    if (options.registerController) {
+      imports.push(
+        MediasControllerModule.forRoot(),
+        RouterModule.register([
+          {
+            path: routePrefix,
+            module: MediasControllerModule,
+          },
+        ]),
+      );
+    }
 
     return {
       module: MediasModule,
-      imports: [
-        MinioModule.register({
-          ...options.s3,
-        }),
-      ],
-      controllers,
+      imports,
       providers: [
         {
           provide: MEDIAS_MODULE_OPTIONS,
@@ -38,21 +68,34 @@ export class MediasModule {
    * @param options Async configuration options
    */
   static forRootAsync(options: MediasModuleAsyncOptions): DynamicModule {
-    const controllers = options.registerController ? [MediasController] : [];
+    const routePrefix = options.routePrefix ?? 'medias';
+    const imports: DynamicModule['imports'] = [
+      ...(options.imports || []),
+      MinioModule.registerAsync({
+        useFactory: async (...args: unknown[]) => {
+          const moduleOptions = await this.createModuleOptions(options, ...args);
+          return moduleOptions.s3;
+        },
+        inject: options.inject || [],
+      }),
+    ];
+
+    // If controller is requested, set up the controller module with route prefix
+    if (options.registerController) {
+      imports.push(
+        MediasControllerModule.forRoot(),
+        RouterModule.register([
+          {
+            path: routePrefix,
+            module: MediasControllerModule,
+          },
+        ]),
+      );
+    }
 
     return {
       module: MediasModule,
-      imports: [
-        ...(options.imports || []),
-        MinioModule.registerAsync({
-          useFactory: async (...args: unknown[]) => {
-            const moduleOptions = await this.createModuleOptions(options, ...args);
-            return moduleOptions.s3;
-          },
-          inject: options.inject || [],
-        }),
-      ],
-      controllers,
+      imports,
       providers: [...this.createAsyncProviders(options), MediasService],
       exports: [MediasService],
     };

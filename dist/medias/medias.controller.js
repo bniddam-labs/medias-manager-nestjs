@@ -101,7 +101,7 @@ __decorate([
     __metadata("design:returntype", Promise)
 ], MediasController.prototype, "deleteMedia", null);
 exports.MediasController = MediasController = MediasController_1 = __decorate([
-    (0, common_1.Controller)('medias'),
+    (0, common_1.Controller)(),
     __metadata("design:paramtypes", [medias_service_1.MediasService])
 ], MediasController);
 //# sourceMappingURL=medias.controller.js.map

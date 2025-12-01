@@ -24,5 +24,6 @@ export interface MediasModuleAsyncOptions extends Pick<ModuleMetadata, 'imports'
     useFactory?: (...args: any[]) => Promise<MediasModuleOptions> | MediasModuleOptions;
     inject?: any[];
     registerController?: boolean;
+    routePrefix?: string;
 }
 //# sourceMappingURL=medias-module-options.interface.d.ts.map
