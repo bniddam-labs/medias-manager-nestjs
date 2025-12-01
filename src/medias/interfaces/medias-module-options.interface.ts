@@ -1,4 +1,5 @@
 import { LogLevel, ModuleMetadata, Type } from '@nestjs/common';
+import { ImageFormat } from '../medias.constants';
 
 /**
  * S3/MinIO configuration options
@@ -11,6 +12,52 @@ export interface S3Options {
   secretKey: string;
   region: string;
   bucketName: string;
+}
+
+/**
+ * Event fired when an image is resized
+ */
+export interface ImageResizedEvent {
+  /** Original file name */
+  originalFileName: string;
+  /** Resized file name (cached) */
+  resizedFileName: string;
+  /** Requested size in pixels */
+  requestedSize: number;
+  /** Final resized buffer size in bytes */
+  finalSize: number;
+  /** Whether the resized image was served from cache */
+  fromCache: boolean;
+  /** Processing duration in milliseconds */
+  durationMs: number;
+  /** Format used for the resized image */
+  format: ImageFormat;
+}
+
+/**
+ * Event fired when a cached image is hit
+ */
+export interface CacheHitEvent {
+  /** File name that was served from cache */
+  fileName: string;
+  /** Requested size (0 for original) */
+  size: number;
+  /** Whether it was a 304 Not Modified response */
+  notModified: boolean;
+}
+
+/**
+ * Event fired when a file is uploaded
+ */
+export interface FileUploadedEvent {
+  /** File name */
+  fileName: string;
+  /** File size in bytes */
+  size: number;
+  /** Whether the file is an image */
+  isImage: boolean;
+  /** Image dimensions if available */
+  dimensions?: { width: number; height: number };
 }
 
 /**
@@ -93,6 +140,68 @@ export interface MediasModuleOptions {
    * - 'verbose': All logs including detailed step-by-step traces
    */
   logLevel?: MediasLogLevel;
+
+  /**
+   * Optional: Preferred output format for resized images (default: 'original')
+   *
+   * - 'original': Keep the original format
+   * - 'jpeg': Convert to JPEG (quality: 85)
+   * - 'webp': Convert to WebP (quality: 80, smaller file size)
+   * - 'avif': Convert to AVIF (quality: 75, best compression)
+   *
+   * Note: This is overridden by content negotiation if enabled.
+   *
+   * @default 'original'
+   */
+  preferredFormat?: ImageFormat;
+
+  /**
+   * Optional: Enable content negotiation based on Accept header (default: false)
+   *
+   * When enabled, the server will analyze the Accept header and serve
+   * the best supported format (AVIF > WebP > JPEG > original).
+   * Adds "Vary: Accept" header for proper CDN caching.
+   *
+   * Requires allowWebp and/or allowAvif to be true for those formats.
+   *
+   * @default false
+   */
+  enableContentNegotiation?: boolean;
+
+  /**
+   * Optional: Allow WebP format conversion (default: true)
+   *
+   * @default true
+   */
+  allowWebp?: boolean;
+
+  /**
+   * Optional: Allow AVIF format conversion (default: true)
+   *
+   * @default true
+   */
+  allowAvif?: boolean;
+
+  /**
+   * Optional: Callback fired when an image is resized
+   *
+   * Useful for monitoring, analytics, or custom logging.
+   */
+  onImageResized?: (event: ImageResizedEvent) => void;
+
+  /**
+   * Optional: Callback fired when a cached resource is served
+   *
+   * Useful for cache hit/miss analytics.
+   */
+  onCacheHit?: (event: CacheHitEvent) => void;
+
+  /**
+   * Optional: Callback fired when a file is uploaded
+   *
+   * Useful for tracking uploads, updating databases, or triggering workflows.
+   */
+  onUploaded?: (event: FileUploadedEvent) => void;
 }
 
 /**

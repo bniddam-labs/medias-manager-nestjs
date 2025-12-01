@@ -131,3 +131,64 @@ export const HTTP_STATUS = {
   NOT_MODIFIED: 304,
   INTERNAL_SERVER_ERROR: 500,
 } as const;
+
+/**
+ * Image format options for conversion
+ */
+export type ImageFormat = 'original' | 'jpeg' | 'webp' | 'avif';
+
+/**
+ * Image quality settings by format
+ */
+export const IMAGE_QUALITY = {
+  JPEG: 85,
+  WEBP: 80,
+  AVIF: 75,
+} as const;
+
+/**
+ * Format priority for content negotiation (higher = preferred)
+ */
+export const FORMAT_PRIORITY: Record<ImageFormat, number> = {
+  avif: 3,
+  webp: 2,
+  jpeg: 1,
+  original: 0,
+};
+
+/**
+ * Retry configuration for S3 operations
+ */
+export const RETRY_CONFIG = {
+  /** Maximum number of retry attempts */
+  MAX_ATTEMPTS: 3,
+  /** Initial backoff delay in milliseconds */
+  INITIAL_BACKOFF_MS: 50,
+  /** Backoff multiplier for each retry attempt */
+  BACKOFF_MULTIPLIER: 2,
+} as const;
+
+/**
+ * S3 error codes that should trigger a retry
+ */
+export const TRANSIENT_S3_ERROR_CODES = [
+  'RequestTimeout',
+  'RequestTimeoutException',
+  'PriorRequestNotComplete',
+  'ConnectionError',
+  'NetworkingError',
+  'SlowDown',
+  'ServiceUnavailable',
+  'InternalError',
+];
+
+/**
+ * S3 metadata keys for enriched file information
+ */
+export const S3_METADATA_KEYS = {
+  WIDTH: 'x-amz-meta-width',
+  HEIGHT: 'x-amz-meta-height',
+  MIME_TYPE: 'x-amz-meta-mime',
+  ORIGINAL_NAME: 'x-amz-meta-original-name',
+  UPLOADED_AT: 'x-amz-meta-uploaded-at',
+} as const;

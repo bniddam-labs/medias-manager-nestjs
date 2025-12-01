@@ -30,6 +30,7 @@ describe('MediasController', () => {
       getMediaStream: jest.fn(),
       getResizedImage: jest.fn(),
       deleteMedia: jest.fn(),
+      negotiateFormat: jest.fn().mockReturnValue('original'),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -109,7 +110,7 @@ describe('MediasController', () => {
 
       await controller.getMedia({ fileName: 'photo.jpg' }, { size: '300' }, req, res);
 
-      expect(mediasService.getResizedImage).toHaveBeenCalledWith('photo.jpg', 300, undefined);
+      expect(mediasService.getResizedImage).toHaveBeenCalledWith('photo.jpg', 300, undefined, 'original');
       expect(res.send).toHaveBeenCalled();
     });
 

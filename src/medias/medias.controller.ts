@@ -13,10 +13,13 @@ export class MediasController {
 
   @Get('*fileName')
   async getMedia(@Param() params: GetMediaParamsDto, @Query() query: GetMediaQueryDto, @Req() req: Request, @Res() res: Response): Promise<void> {
+    const startTime = Date.now();
+
     // Wildcard params return an array in path-to-regexp v8
     const fileName = Array.isArray(params.fileName) ? params.fileName.join('/') : params.fileName;
     const { size } = query;
     const ifNoneMatch = req.headers['if-none-match'] as string | undefined;
+    const acceptHeader = req.headers['accept'] as string | undefined;
 
     try {
       // If size is requested, attempt to resize (only works for images)
@@ -31,13 +34,26 @@ export class MediasController {
           throw new BadRequestException(`Cannot resize non-image files. Remove the size parameter to serve the file.`);
         }
 
-        const result = await this.mediasService.getResizedImage(fileName, requestedSize, ifNoneMatch);
+        // Negotiate format based on Accept header
+        const format = this.mediasService.negotiateFormat(acceptHeader);
+
+        const result = await this.mediasService.getResizedImage(fileName, requestedSize, ifNoneMatch, format);
+
+        const duration = Date.now() - startTime;
 
         if (result.notModified) {
+          res.setHeader('X-Processing-Time', `${duration}ms`);
+          res.setHeader('X-Cache', 'HIT');
+          res.setHeader('X-Resize', 'yes');
           res.status(HTTP_STATUS.NOT_MODIFIED).end();
           return;
         }
 
+        // Add Vary: Accept for proper CDN caching
+        res.setHeader('Vary', 'Accept');
+        res.setHeader('X-Processing-Time', `${duration}ms`);
+        res.setHeader('X-Cache', 'MISS');
+        res.setHeader('X-Resize', 'yes');
         res.setHeader('Content-Type', result.mimeType);
         res.setHeader('Content-Length', result.buffer.length);
         res.setHeader('Content-Disposition', `inline; filename="${fileName}"`);
@@ -48,11 +64,19 @@ export class MediasController {
         // Serve original file (any media type)
         const result = await this.mediasService.getMediaStream(fileName, ifNoneMatch);
 
+        const duration = Date.now() - startTime;
+
         if (result.notModified) {
+          res.setHeader('X-Processing-Time', `${duration}ms`);
+          res.setHeader('X-Cache', 'HIT');
+          res.setHeader('X-Resize', 'no');
           res.status(HTTP_STATUS.NOT_MODIFIED).end();
           return;
         }
 
+        res.setHeader('X-Processing-Time', `${duration}ms`);
+        res.setHeader('X-Cache', 'MISS');
+        res.setHeader('X-Resize', 'no');
         res.setHeader('Content-Type', result.mimeType);
         res.setHeader('Content-Length', result.size);
         res.setHeader('Content-Disposition', `inline; filename="${fileName}"`);
