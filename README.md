@@ -7,33 +7,33 @@
 
 ## ✨ Features
 
-| Feature | Description |
-|---------|-------------|
-| 🗄️ **Multi-Media Support** | Images, videos, audio, documents, and archives |
-| ☁️ **S3/MinIO Integration** | Works with AWS S3, MinIO, DigitalOcean Spaces, etc. |
-| 🖼️ **On-Demand Resizing** | Automatic image resizing with Sharp |
-| 💾 **Smart Caching** | Resized images cached to S3 automatically |
-| ⚡ **HTTP Caching** | ETag support for 304 responses (99% bandwidth savings) |
-| 🌊 **Streaming** | Memory-efficient streaming for large files |
-| 🔒 **Security First** | Path traversal prevention, file type validation |
-| 📦 **Zero Config** | Sensible defaults, optional controller |
-| 🔧 **TypeScript** | Full type safety with strict mode |
+| Feature                     | Description                                            |
+| --------------------------- | ------------------------------------------------------ |
+| 🗄️ **Multi-Media Support**  | Images, videos, audio, documents, and archives         |
+| ☁️ **S3/MinIO Integration** | Works with AWS S3, MinIO, DigitalOcean Spaces, etc.    |
+| 🖼️ **On-Demand Resizing**   | Automatic image resizing with Sharp                    |
+| 💾 **Smart Caching**        | Resized images cached to S3 automatically              |
+| ⚡ **HTTP Caching**         | ETag support for 304 responses (99% bandwidth savings) |
+| 🌊 **Streaming**            | Memory-efficient streaming for large files             |
+| 🔒 **Security First**       | Path traversal prevention, file type validation        |
+| 📦 **Zero Config**          | Sensible defaults, optional controller                 |
+| 🔧 **TypeScript**           | Full type safety with strict mode                      |
 
 ### 📁 Supported File Types
 
-| Category | Extensions |
-|----------|------------|
-| 🖼️ Images | `.png` `.jpg` `.jpeg` `.gif` `.webp` `.svg` `.ico` `.bmp` `.tiff` `.avif` |
-| 🎬 Videos | `.mp4` `.webm` `.ogg` `.mov` `.avi` `.mkv` `.m4v` `.wmv` `.flv` |
-| 🎵 Audio | `.mp3` `.wav` `.flac` `.aac` `.m4a` `.wma` `.opus` |
-| 📄 Documents | `.pdf` `.doc` `.docx` `.xls` `.xlsx` `.ppt` `.pptx` `.txt` `.rtf` `.csv` |
-| 📦 Archives | `.zip` `.rar` `.7z` `.tar` `.gz` `.bz2` |
+| Category     | Extensions                                                                |
+| ------------ | ------------------------------------------------------------------------- |
+| 🖼️ Images    | `.png` `.jpg` `.jpeg` `.gif` `.webp` `.svg` `.ico` `.bmp` `.tiff` `.avif` |
+| 🎬 Videos    | `.mp4` `.webm` `.ogg` `.mov` `.avi` `.mkv` `.m4v` `.wmv` `.flv`           |
+| 🎵 Audio     | `.mp3` `.wav` `.flac` `.aac` `.m4a` `.wma` `.opus`                        |
+| 📄 Documents | `.pdf` `.doc` `.docx` `.xls` `.xlsx` `.ppt` `.pptx` `.txt` `.rtf` `.csv`  |
+| 📦 Archives  | `.zip` `.rar` `.7z` `.tar` `.gz` `.bz2`                                   |
 
 ---
 
 ## 📦 Installation
 
-```bash
+<!-- ```bash
 # pnpm (recommended)
 pnpm add @bniddam-labs/medias-manager-nestjs
 
@@ -42,7 +42,7 @@ npm install @bniddam-labs/medias-manager-nestjs
 
 # yarn
 yarn add @bniddam-labs/medias-manager-nestjs
-```
+``` -->
 
 ### 📥 Install from GitHub
 
@@ -115,15 +115,15 @@ export class AppModule {}
 ```typescript
 interface MediasModuleOptions {
   s3: {
-    endPoint: string;      // S3/MinIO endpoint
-    port?: number;         // Port (default: 443 for SSL, 80 otherwise)
-    useSSL?: boolean;      // Use HTTPS (default: true)
-    accessKey: string;     // Access key
-    secretKey: string;     // Secret key
-    region?: string;       // AWS region
-    bucketName: string;    // Bucket name
+    endPoint: string; // S3/MinIO endpoint
+    port?: number; // Port (default: 443 for SSL, 80 otherwise)
+    useSSL?: boolean; // Use HTTPS (default: true)
+    accessKey: string; // Access key
+    secretKey: string; // Secret key
+    region?: string; // AWS region
+    bucketName: string; // Bucket name
   };
-  registerController?: boolean;  // Enable built-in controller (default: false)
+  registerController?: boolean; // Enable built-in controller (default: false)
 }
 ```
 
@@ -142,7 +142,7 @@ export class MyService {
   constructor(private readonly mediasService: MediasService) {}
 
   // 🖼️ Get image with optional resize
-  async getImage(fileName: string, size?: number) {
+  getImage(fileName: string, size?: number) {
     if (size) {
       return this.mediasService.getResizedImage(fileName, size);
     }
@@ -150,13 +150,13 @@ export class MyService {
   }
 
   // 📤 Upload media
-  async upload(fileName: string, buffer: Buffer) {
-    await this.mediasService.uploadMedia(fileName, buffer);
+  upload(fileName: string, buffer: Buffer) {
+    return this.mediasService.uploadMedia(fileName, buffer);
   }
 
   // 🗑️ Delete media
-  async delete(fileName: string) {
-    await this.mediasService.deleteMedia(fileName);
+  delete(fileName: string) {
+    return this.mediasService.deleteMedia(fileName);
   }
 
   // 🔍 Check file type
@@ -172,18 +172,20 @@ export class MyService {
 
 ```typescript
 MediasModule.forRoot({
-  s3: { /* ... */ },
-  registerController: true,  // Enables /medias endpoints
-})
+  s3: {
+    /* ... */
+  },
+  registerController: true, // Enables /medias endpoints
+});
 ```
 
 **Endpoints:**
 
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| `GET` | `/medias/:fileName` | Get media file |
-| `GET` | `/medias/:fileName?size=300` | Get resized image (images only) |
-| `DELETE` | `/medias/:fileName` | Delete media file |
+| Method   | Endpoint                     | Description                     |
+| -------- | ---------------------------- | ------------------------------- |
+| `GET`    | `/medias/:fileName`          | Get media file                  |
+| `GET`    | `/medias/:fileName?size=300` | Get resized image (images only) |
+| `DELETE` | `/medias/:fileName`          | Delete media file               |
 
 ---
 
@@ -225,6 +227,7 @@ GET /medias/photo.jpg?size=300
 ### ✅ Resizable formats
 
 Only raster images can be resized:
+
 - `.png` `.jpg` `.jpeg` `.gif` `.webp` `.avif` `.tiff` `.bmp`
 
 ### ❌ Not resizable
@@ -286,9 +289,9 @@ result.stream.pipe(res);
 @UseGuards(AuthGuard)
 export class MyMediasController {
   constructor(private readonly mediasService: MediasService) {}
-  
+
   @Get(':fileName')
-  async get(@Param('fileName') fileName: string) {
+  get(@Param('fileName') fileName: string) {
     return this.mediasService.getMediaStream(fileName);
   }
 }
@@ -298,22 +301,19 @@ export class MyMediasController {
 
 ## 🔗 Frontend Integration
 
-Works great with **[@bniddam-labs/lazy-media-vuejs](https://github.com/bniddam-labs/lazy-media-vuejs)**:
+Works great with **[@bniddam-labs/lazy-media-vuejs](https://github.com/bniddam-labs/lazy-medias-manager-vuejs)**:
 
 ```vue
 <template>
   <!-- Progressive blur-up loading -->
-  <LazyImage 
-    src="http://localhost:3000/medias/photo.jpg" 
-    :sizes="[100, 400]"
-  />
-  
+  <LazyImage src="http://localhost:3000/medias/photo.jpg" :sizes="[100, 400]" />
+
   <!-- Lazy video -->
   <LazyVideo src="http://localhost:3000/medias/video.mp4" />
-  
+
   <!-- Lazy audio -->
   <LazyAudio src="http://localhost:3000/medias/song.mp3" />
-  
+
   <!-- Lazy document -->
   <LazyDocument src="http://localhost:3000/medias/report.pdf" />
 </template>
@@ -325,30 +325,30 @@ Works great with **[@bniddam-labs/lazy-media-vuejs](https://github.com/bniddam-l
 
 ### MediasService Methods
 
-| Method | Description |
-|--------|-------------|
-| `getMediaStream(fileName, ifNoneMatch?)` | Stream media with ETag support |
-| `getResizedImage(fileName, size, ifNoneMatch?)` | Get/generate resized image |
-| `getMedia(fileName)` | Get media as Buffer |
-| `getMediaStat(fileName)` | Get file metadata |
-| `uploadMedia(fileName, buffer)` | Upload media to S3 |
-| `deleteMedia(fileName)` | Delete media from S3 |
-| `isImage(fileName)` | Check if file is an image |
-| `isResizable(fileName)` | Check if file can be resized |
-| `getMimeType(extension)` | Get MIME type for extension |
+| Method                                          | Description                    |
+| ----------------------------------------------- | ------------------------------ |
+| `getMediaStream(fileName, ifNoneMatch?)`        | Stream media with ETag support |
+| `getResizedImage(fileName, size, ifNoneMatch?)` | Get/generate resized image     |
+| `getMedia(fileName)`                            | Get media as Buffer            |
+| `getMediaStat(fileName)`                        | Get file metadata              |
+| `uploadMedia(fileName, buffer)`                 | Upload media to S3             |
+| `deleteMedia(fileName)`                         | Delete media from S3           |
+| `isImage(fileName)`                             | Check if file is an image      |
+| `isResizable(fileName)`                         | Check if file can be resized   |
+| `getMimeType(extension)`                        | Get MIME type for extension    |
 
 ### Exported Constants
 
 ```typescript
-import { 
-  IMAGE_EXTENSIONS,        // ['.png', '.jpg', ...]
+import {
+  IMAGE_EXTENSIONS, // ['.png', '.jpg', ...]
   RESIZABLE_IMAGE_EXTENSIONS,
   VIDEO_EXTENSIONS,
   AUDIO_EXTENSIONS,
   DOCUMENT_EXTENSIONS,
   ARCHIVE_EXTENSIONS,
   ALL_MEDIA_EXTENSIONS,
-  MIME_TYPES,              // { '.png': 'image/png', ... }
+  MIME_TYPES, // { '.png': 'image/png', ... }
 } from '@bniddam-labs/medias-manager-nestjs';
 ```
 
