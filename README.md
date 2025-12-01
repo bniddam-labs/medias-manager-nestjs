@@ -124,7 +124,32 @@ interface MediasModuleOptions {
     bucketName: string; // Bucket name
   };
   registerController?: boolean; // Enable built-in controller (default: false)
+  maxResizeWidth?: number; // Max resize width in px (default: 5000)
+  logLevel?: MediasLogLevel; // Logging verbosity (default: 'none')
 }
+```
+
+### 📝 Log Levels
+
+Control logging verbosity with the `logLevel` option:
+
+| Level     | Description                                          |
+| --------- | ---------------------------------------------------- |
+| `'none'`  | No logging (default)                                 |
+| `'error'` | Only errors                                          |
+| `'warn'`  | Errors + warnings                                    |
+| `'log'`   | General info (file served, uploaded, deleted)        |
+| `'debug'` | Cache hits/misses, ETags, file stats                 |
+| `'verbose'` | Step-by-step traces of every operation             |
+
+```typescript
+MediasModule.forRoot({
+  s3: { /* ... */ },
+  logLevel: 'debug', // See cache behavior and ETags
+});
+```
+
+Logs appear with context `[MediasService]` in your app's console.
 ```
 
 ---

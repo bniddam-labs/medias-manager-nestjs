@@ -7,6 +7,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.1.2] - 2025-12-01
+
+### Added
+- **Configurable logging** with `logLevel` option in module configuration
+  - `'none'` (default): No logging
+  - `'error'`: Only errors
+  - `'warn'`: Errors and warnings
+  - `'log'`: General info (file served, uploaded, deleted)
+  - `'debug'`: Cache hits/misses, ETags, file stats
+  - `'verbose'`: Step-by-step traces of every operation
+- Comprehensive logging throughout `MediasService` for debugging
+- Exported `MediasLogLevel` type
+
+### Removed
+- `routePrefix` option (was not functional due to NestJS static decorators)
+  - Use `RouterModule` in your app for custom route prefixes instead
+
+### Fixed
+- Module dependency injection when using `registerController: true`
+
 ## [3.0.0] - 2025-11-28
 
 ### ⚠️ BREAKING CHANGES
