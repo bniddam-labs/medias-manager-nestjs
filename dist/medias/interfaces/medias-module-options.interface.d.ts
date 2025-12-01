@@ -12,7 +12,6 @@ export type MediasLogLevel = LogLevel | 'none';
 export interface MediasModuleOptions {
     s3: S3Options;
     registerController?: boolean;
-    routePrefix?: string;
     allowedExtensions?: string[];
     maxResizeWidth?: number;
     logLevel?: MediasLogLevel;
@@ -26,6 +25,5 @@ export interface MediasModuleAsyncOptions extends Pick<ModuleMetadata, 'imports'
     useFactory?: (...args: any[]) => Promise<MediasModuleOptions> | MediasModuleOptions;
     inject?: any[];
     registerController?: boolean;
-    routePrefix?: string;
 }
 //# sourceMappingURL=medias-module-options.interface.d.ts.map

@@ -4,7 +4,7 @@ import { DeleteMediaParamsDto } from './dto/delete-media.dto';
 import { GetMediaParamsDto, GetMediaQueryDto } from './dto/get-media.dto';
 import { MediasService } from './medias.service';
 
-@Controller()
+@Controller('medias')
 export class MediasController {
   private readonly logger = new Logger(MediasController.name);
 

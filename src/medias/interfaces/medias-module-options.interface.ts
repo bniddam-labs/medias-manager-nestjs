@@ -45,12 +45,6 @@ export interface MediasModuleOptions {
   registerController?: boolean;
 
   /**
-   * Optional: Override the default route prefix when using built-in controller (default: 'medias')
-   * Only applies if registerController is true
-   */
-  routePrefix?: string;
-
-  /**
    * Optional: Custom list of allowed file extensions
    * If not provided, all supported extensions are allowed
    */
@@ -114,13 +108,4 @@ export interface MediasModuleAsyncOptions extends Pick<ModuleMetadata, 'imports'
    * @default false
    */
   registerController?: boolean;
-
-  /**
-   * Optional: Override the default route prefix when using built-in controller (default: 'medias')
-   * Only applies if registerController is true
-   *
-   * Note: For async configuration, this must be specified here at module
-   * registration time, not in the factory-returned options.
-   */
-  routePrefix?: string;
 }
