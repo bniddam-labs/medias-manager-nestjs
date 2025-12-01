@@ -91,3 +91,43 @@ export const MIME_TYPES: Record<string, string> = {
   '.gz': 'application/gzip',
   '.bz2': 'application/x-bzip2',
 };
+
+/**
+ * Default configuration values
+ */
+
+/** Default maximum width for image resizing in pixels */
+export const DEFAULT_MAX_RESIZE_WIDTH = 1200;
+
+/** Size constants in bytes */
+const BYTES_PER_KILOBYTE = 1024;
+const KILOBYTES_PER_MEGABYTE = 1024;
+const BYTES_PER_MEGABYTE = KILOBYTES_PER_MEGABYTE * BYTES_PER_KILOBYTE;
+const DEFAULT_MAX_FILE_SIZE_MB = 15;
+
+/** Default maximum file size for on-the-fly resizing in bytes (15MB) */
+export const DEFAULT_MAX_ORIGINAL_FILE_SIZE = DEFAULT_MAX_FILE_SIZE_MB * BYTES_PER_MEGABYTE;
+
+/** Size units for calculations */
+export const SIZE_UNITS = {
+  KILOBYTE: BYTES_PER_KILOBYTE,
+  MEGABYTE: BYTES_PER_MEGABYTE,
+} as const;
+
+/**
+ * Validation limits
+ */
+
+/** Maximum length for file names */
+export const MAX_FILENAME_LENGTH = 255;
+
+/** Maximum width for resize parameter validation */
+export const MAX_RESIZE_WIDTH_LIMIT = 5000;
+
+/**
+ * HTTP Status Codes
+ */
+export const HTTP_STATUS = {
+  NOT_MODIFIED: 304,
+  INTERNAL_SERVER_ERROR: 500,
+} as const;
