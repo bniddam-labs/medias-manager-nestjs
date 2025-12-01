@@ -1,4 +1,5 @@
 import { LogLevel, ModuleMetadata, Type } from '@nestjs/common';
+import { ImageFormat } from '../medias.constants';
 export interface S3Options {
     endPoint: string;
     port: number;
@@ -7,6 +8,29 @@ export interface S3Options {
     secretKey: string;
     region: string;
     bucketName: string;
+}
+export interface ImageResizedEvent {
+    originalFileName: string;
+    resizedFileName: string;
+    requestedSize: number;
+    finalSize: number;
+    fromCache: boolean;
+    durationMs: number;
+    format: ImageFormat;
+}
+export interface CacheHitEvent {
+    fileName: string;
+    size: number;
+    notModified: boolean;
+}
+export interface FileUploadedEvent {
+    fileName: string;
+    size: number;
+    isImage: boolean;
+    dimensions?: {
+        width: number;
+        height: number;
+    };
 }
 export type MediasLogLevel = LogLevel | 'none';
 export interface MediasModuleOptions {
@@ -17,6 +41,13 @@ export interface MediasModuleOptions {
     autoPreventUpscale?: boolean;
     maxOriginalFileSize?: number;
     logLevel?: MediasLogLevel;
+    preferredFormat?: ImageFormat;
+    enableContentNegotiation?: boolean;
+    allowWebp?: boolean;
+    allowAvif?: boolean;
+    onImageResized?: (event: ImageResizedEvent) => void;
+    onCacheHit?: (event: CacheHitEvent) => void;
+    onUploaded?: (event: FileUploadedEvent) => void;
 }
 export interface MediasModuleOptionsFactory {
     createMediasModuleOptions(): Promise<MediasModuleOptions> | MediasModuleOptions;

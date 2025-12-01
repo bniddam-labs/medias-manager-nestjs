@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.HTTP_STATUS = exports.MAX_RESIZE_WIDTH_LIMIT = exports.MAX_FILENAME_LENGTH = exports.SIZE_UNITS = exports.DEFAULT_MAX_ORIGINAL_FILE_SIZE = exports.DEFAULT_MAX_RESIZE_WIDTH = exports.MIME_TYPES = exports.ALL_MEDIA_EXTENSIONS = exports.ARCHIVE_EXTENSIONS = exports.DOCUMENT_EXTENSIONS = exports.AUDIO_EXTENSIONS = exports.VIDEO_EXTENSIONS = exports.IMAGE_EXTENSIONS = exports.RESIZABLE_IMAGE_EXTENSIONS = exports.MEDIAS_MODULE_OPTIONS = void 0;
+exports.S3_METADATA_KEYS = exports.TRANSIENT_S3_ERROR_CODES = exports.RETRY_CONFIG = exports.FORMAT_PRIORITY = exports.IMAGE_QUALITY = exports.HTTP_STATUS = exports.MAX_RESIZE_WIDTH_LIMIT = exports.MAX_FILENAME_LENGTH = exports.SIZE_UNITS = exports.DEFAULT_MAX_ORIGINAL_FILE_SIZE = exports.DEFAULT_MAX_RESIZE_WIDTH = exports.MIME_TYPES = exports.ALL_MEDIA_EXTENSIONS = exports.ARCHIVE_EXTENSIONS = exports.DOCUMENT_EXTENSIONS = exports.AUDIO_EXTENSIONS = exports.VIDEO_EXTENSIONS = exports.IMAGE_EXTENSIONS = exports.RESIZABLE_IMAGE_EXTENSIONS = exports.MEDIAS_MODULE_OPTIONS = void 0;
 exports.MEDIAS_MODULE_OPTIONS = 'MEDIAS_MODULE_OPTIONS';
 exports.RESIZABLE_IMAGE_EXTENSIONS = ['.png', '.jpg', '.jpeg', '.gif', '.webp', '.avif', '.tiff'];
 exports.IMAGE_EXTENSIONS = [...exports.RESIZABLE_IMAGE_EXTENSIONS, '.svg', '.ico', '.bmp'];
@@ -68,5 +68,38 @@ exports.MAX_RESIZE_WIDTH_LIMIT = 5000;
 exports.HTTP_STATUS = {
     NOT_MODIFIED: 304,
     INTERNAL_SERVER_ERROR: 500,
+};
+exports.IMAGE_QUALITY = {
+    JPEG: 85,
+    WEBP: 80,
+    AVIF: 75,
+};
+exports.FORMAT_PRIORITY = {
+    avif: 3,
+    webp: 2,
+    jpeg: 1,
+    original: 0,
+};
+exports.RETRY_CONFIG = {
+    MAX_ATTEMPTS: 3,
+    INITIAL_BACKOFF_MS: 50,
+    BACKOFF_MULTIPLIER: 2,
+};
+exports.TRANSIENT_S3_ERROR_CODES = [
+    'RequestTimeout',
+    'RequestTimeoutException',
+    'PriorRequestNotComplete',
+    'ConnectionError',
+    'NetworkingError',
+    'SlowDown',
+    'ServiceUnavailable',
+    'InternalError',
+];
+exports.S3_METADATA_KEYS = {
+    WIDTH: 'x-amz-meta-width',
+    HEIGHT: 'x-amz-meta-height',
+    MIME_TYPE: 'x-amz-meta-mime',
+    ORIGINAL_NAME: 'x-amz-meta-original-name',
+    UPLOADED_AT: 'x-amz-meta-uploaded-at',
 };
 //# sourceMappingURL=medias.constants.js.map

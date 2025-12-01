@@ -1,6 +1,7 @@
 import { MinioService } from 'nestjs-minio-client';
 import { Readable } from 'stream';
 import { MediasModuleOptions } from './interfaces/medias-module-options.interface';
+import { ImageFormat } from './medias.constants';
 export interface MediaStreamResponse {
     stream: Readable;
     mimeType: string;
@@ -34,18 +35,25 @@ export declare class MediasService {
     private logDebug;
     private logVerbose;
     private getBucketName;
+    private isTransientError;
+    private delay;
+    private withRetry;
     isImage(fileName: string): boolean;
     isResizable(fileName: string): boolean;
     getMimeType(ext: string): string;
     generateETag(fileName: string, lastModified: Date, size: number): string;
     generateETagFromBuffer(buffer: Buffer): string;
+    private applyFormat;
+    private getMimeTypeForFormat;
+    private getExtensionForFormat;
+    negotiateFormat(acceptHeader?: string): ImageFormat;
     getMediaStream(fileName: string, ifNoneMatch?: string): Promise<MediaStreamResponse>;
     getMedia(fileName: string): Promise<Buffer>;
     getMediaFileStream(fileName: string): Promise<Readable>;
     getMediaStat(fileName: string): Promise<MediaStatResult>;
-    uploadMedia(fileName: string, file: Buffer): Promise<void>;
+    uploadMedia(fileName: string, file: Buffer, originalName?: string): Promise<void>;
     deleteMedia(fileName: string): Promise<void>;
     getImageStream(fileName: string, ifNoneMatch?: string): Promise<MediaStreamResponse>;
-    getResizedImage(fileName: string, size: number, ifNoneMatch?: string): Promise<MediaBufferResponse>;
+    getResizedImage(fileName: string, size: number, ifNoneMatch?: string, format?: ImageFormat): Promise<MediaBufferResponse>;
 }
 //# sourceMappingURL=medias.service.d.ts.map

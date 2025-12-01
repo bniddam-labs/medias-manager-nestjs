@@ -19,4 +19,24 @@ export declare const HTTP_STATUS: {
     readonly NOT_MODIFIED: 304;
     readonly INTERNAL_SERVER_ERROR: 500;
 };
+export type ImageFormat = 'original' | 'jpeg' | 'webp' | 'avif';
+export declare const IMAGE_QUALITY: {
+    readonly JPEG: 85;
+    readonly WEBP: 80;
+    readonly AVIF: 75;
+};
+export declare const FORMAT_PRIORITY: Record<ImageFormat, number>;
+export declare const RETRY_CONFIG: {
+    readonly MAX_ATTEMPTS: 3;
+    readonly INITIAL_BACKOFF_MS: 50;
+    readonly BACKOFF_MULTIPLIER: 2;
+};
+export declare const TRANSIENT_S3_ERROR_CODES: string[];
+export declare const S3_METADATA_KEYS: {
+    readonly WIDTH: "x-amz-meta-width";
+    readonly HEIGHT: "x-amz-meta-height";
+    readonly MIME_TYPE: "x-amz-meta-mime";
+    readonly ORIGINAL_NAME: "x-amz-meta-original-name";
+    readonly UPLOADED_AT: "x-amz-meta-uploaded-at";
+};
 //# sourceMappingURL=medias.constants.d.ts.map

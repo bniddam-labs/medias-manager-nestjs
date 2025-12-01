@@ -109,6 +109,53 @@ let MediasService = MediasService_1 = class MediasService {
         }
         return bucketName;
     }
+    isTransientError(error) {
+        if (!error || typeof error !== 'object') {
+            return false;
+        }
+        const err = error;
+        const errorCode = err.code ?? err.name ?? '';
+        return medias_constants_1.TRANSIENT_S3_ERROR_CODES.includes(errorCode);
+    }
+    delay(ms) {
+        return new Promise((resolve) => setTimeout(resolve, ms));
+    }
+    async withRetry(operation, context) {
+        let attempt = 0;
+        while (true) {
+            try {
+                this.logVerbose(`Executing S3 operation (attempt ${attempt + 1}/${medias_constants_1.RETRY_CONFIG.MAX_ATTEMPTS})`, {
+                    operation: context.operationName,
+                    fileName: context.fileName,
+                });
+                return await operation();
+            }
+            catch (error) {
+                attempt++;
+                const isTransient = this.isTransientError(error);
+                const shouldRetry = isTransient && attempt < medias_constants_1.RETRY_CONFIG.MAX_ATTEMPTS;
+                if (!shouldRetry) {
+                    this.logError('S3 operation failed', {
+                        operation: context.operationName,
+                        fileName: context.fileName,
+                        attempt,
+                        isTransient,
+                        error: error instanceof Error ? error.message : 'Unknown error',
+                    });
+                    throw error;
+                }
+                const backoffMs = medias_constants_1.RETRY_CONFIG.INITIAL_BACKOFF_MS * Math.pow(medias_constants_1.RETRY_CONFIG.BACKOFF_MULTIPLIER, attempt - 1);
+                this.logWarn('Transient S3 error, retrying', {
+                    operation: context.operationName,
+                    fileName: context.fileName,
+                    attempt,
+                    retryAfterMs: backoffMs,
+                    error: error instanceof Error ? error.message : 'Unknown error',
+                });
+                await this.delay(backoffMs);
+            }
+        }
+    }
     isImage(fileName) {
         const ext = path.extname(fileName).toLowerCase();
         return medias_constants_1.IMAGE_EXTENSIONS.includes(ext);
@@ -128,6 +175,70 @@ let MediasService = MediasService_1 = class MediasService {
         const hash = crypto.createHash('md5').update(buffer).digest('hex');
         return `"${hash}"`;
     }
+    applyFormat(pipeline, format) {
+        switch (format) {
+            case 'webp':
+                return pipeline.webp({ quality: medias_constants_1.IMAGE_QUALITY.WEBP });
+            case 'jpeg':
+                return pipeline.jpeg({ quality: medias_constants_1.IMAGE_QUALITY.JPEG });
+            case 'avif':
+                return pipeline.avif({ quality: medias_constants_1.IMAGE_QUALITY.AVIF });
+            case 'original':
+            default:
+                return pipeline;
+        }
+    }
+    getMimeTypeForFormat(format, originalExt) {
+        switch (format) {
+            case 'webp':
+                return 'image/webp';
+            case 'jpeg':
+                return 'image/jpeg';
+            case 'avif':
+                return 'image/avif';
+            case 'original':
+            default:
+                return this.getMimeType(originalExt);
+        }
+    }
+    getExtensionForFormat(format, originalExt) {
+        switch (format) {
+            case 'webp':
+                return '.webp';
+            case 'jpeg':
+                return '.jpg';
+            case 'avif':
+                return '.avif';
+            case 'original':
+            default:
+                return originalExt;
+        }
+    }
+    negotiateFormat(acceptHeader) {
+        if (!this.options.enableContentNegotiation) {
+            return this.options.preferredFormat ?? 'original';
+        }
+        if (!acceptHeader) {
+            return this.options.preferredFormat ?? 'original';
+        }
+        const accept = acceptHeader.toLowerCase();
+        const allowAvif = this.options.allowAvif ?? true;
+        const allowWebp = this.options.allowWebp ?? true;
+        if (allowAvif && accept.includes('image/avif')) {
+            this.logDebug('Content negotiation: AVIF selected', { acceptHeader });
+            return 'avif';
+        }
+        if (allowWebp && accept.includes('image/webp')) {
+            this.logDebug('Content negotiation: WebP selected', { acceptHeader });
+            return 'webp';
+        }
+        if (accept.includes('image/jpeg') || accept.includes('image/*') || accept.includes('*/*')) {
+            this.logDebug('Content negotiation: JPEG selected as fallback', { acceptHeader });
+            return 'jpeg';
+        }
+        this.logDebug('Content negotiation: original format selected', { acceptHeader });
+        return 'original';
+    }
     async getMediaStream(fileName, ifNoneMatch) {
         this.logVerbose('getMediaStream called', { fileName, hasIfNoneMatch: !!ifNoneMatch });
         const ext = path.extname(fileName);
@@ -139,6 +250,11 @@ let MediasService = MediasService_1 = class MediasService {
         this.logDebug('File stat retrieved', { fileName, size: stat.size, etag });
         if (ifNoneMatch === etag) {
             this.logDebug('Cache hit - returning 304 Not Modified', { fileName, etag });
+            this.options.onCacheHit?.({
+                fileName,
+                size: 0,
+                notModified: true,
+            });
             return {
                 stream: null,
                 mimeType,
@@ -192,7 +308,7 @@ let MediasService = MediasService_1 = class MediasService {
     async getMediaFileStream(fileName) {
         this.logVerbose('Fetching file stream from S3', { fileName, bucket: this.getBucketName() });
         try {
-            const fileStream = (await this.minioService.client.getObject(this.getBucketName(), fileName));
+            const fileStream = await this.withRetry(() => this.minioService.client.getObject(this.getBucketName(), fileName), { operationName: 'getObject', fileName });
             this.logVerbose('File stream obtained', { fileName });
             return fileStream;
         }
@@ -204,7 +320,7 @@ let MediasService = MediasService_1 = class MediasService {
     async getMediaStat(fileName) {
         this.logVerbose('Fetching file stat from S3', { fileName });
         try {
-            const stat = await this.minioService.client.statObject(this.getBucketName(), fileName);
+            const stat = await this.withRetry(() => this.minioService.client.statObject(this.getBucketName(), fileName), { operationName: 'statObject', fileName });
             this.logVerbose('File stat obtained', { fileName, size: stat.size });
             return stat;
         }
@@ -213,14 +329,64 @@ let MediasService = MediasService_1 = class MediasService {
             throw new common_1.NotFoundException(`File with name ${fileName} not found`);
         }
     }
-    async uploadMedia(fileName, file) {
-        this.logVerbose('Uploading file to S3', { fileName, size: file.length });
-        await this.minioService.client.putObject(this.getBucketName(), fileName, file);
+    async uploadMedia(fileName, file, originalName) {
+        this.logVerbose('Uploading file to S3', { fileName, size: file.length, originalName });
+        if (this.isImage(fileName)) {
+            try {
+                const metadata = await (0, sharp_1.default)(file).metadata();
+                const ext = path.extname(fileName);
+                const mimeType = this.getMimeType(ext);
+                const s3Metadata = {
+                    [medias_constants_1.S3_METADATA_KEYS.MIME_TYPE]: mimeType,
+                    [medias_constants_1.S3_METADATA_KEYS.UPLOADED_AT]: new Date().toISOString(),
+                };
+                if (metadata.width) {
+                    s3Metadata[medias_constants_1.S3_METADATA_KEYS.WIDTH] = String(metadata.width);
+                }
+                if (metadata.height) {
+                    s3Metadata[medias_constants_1.S3_METADATA_KEYS.HEIGHT] = String(metadata.height);
+                }
+                if (originalName) {
+                    s3Metadata[medias_constants_1.S3_METADATA_KEYS.ORIGINAL_NAME] = originalName;
+                }
+                this.logDebug('Uploading image with enriched metadata', {
+                    fileName,
+                    width: metadata.width,
+                    height: metadata.height,
+                    format: metadata.format,
+                });
+                await this.withRetry(() => this.minioService.client.putObject(this.getBucketName(), fileName, file, s3Metadata), { operationName: 'putObject', fileName });
+                this.logInfo('Image uploaded to S3 with metadata', {
+                    fileName,
+                    size: file.length,
+                    dimensions: metadata.width && metadata.height ? `${metadata.width}x${metadata.height}` : undefined,
+                });
+                this.options.onUploaded?.({
+                    fileName,
+                    size: file.length,
+                    isImage: true,
+                    dimensions: metadata.width && metadata.height ? { width: metadata.width, height: metadata.height } : undefined,
+                });
+                return;
+            }
+            catch (error) {
+                this.logWarn('Failed to extract image metadata, uploading without enrichment', {
+                    fileName,
+                    error: error instanceof Error ? error.message : 'Unknown error',
+                });
+            }
+        }
+        await this.withRetry(() => this.minioService.client.putObject(this.getBucketName(), fileName, file), { operationName: 'putObject', fileName });
         this.logInfo('File uploaded to S3', { fileName, size: file.length });
+        this.options.onUploaded?.({
+            fileName,
+            size: file.length,
+            isImage: false,
+        });
     }
     async deleteMedia(fileName) {
         this.logVerbose('Deleting file from S3', { fileName });
-        await this.minioService.client.removeObject(this.getBucketName(), fileName);
+        await this.withRetry(() => this.minioService.client.removeObject(this.getBucketName(), fileName), { operationName: 'removeObject', fileName });
         this.logInfo('File deleted from S3', { fileName });
     }
     async getImageStream(fileName, ifNoneMatch) {
@@ -231,8 +397,10 @@ let MediasService = MediasService_1 = class MediasService {
         }
         return this.getMediaStream(fileName, ifNoneMatch);
     }
-    async getResizedImage(fileName, size, ifNoneMatch) {
-        this.logVerbose('getResizedImage called', { fileName, size, hasIfNoneMatch: !!ifNoneMatch });
+    async getResizedImage(fileName, size, ifNoneMatch, format) {
+        const startTime = Date.now();
+        const outputFormat = format ?? this.options.preferredFormat ?? 'original';
+        this.logVerbose('getResizedImage called', { fileName, size, outputFormat, hasIfNoneMatch: !!ifNoneMatch });
         if (!this.isResizable(fileName)) {
             const ext = path.extname(fileName).toLowerCase();
             if (this.isImage(fileName)) {
@@ -260,9 +428,10 @@ let MediasService = MediasService_1 = class MediasService {
         const ext = path.extname(fileName);
         const baseName = path.basename(fileName, ext);
         const dirName = path.dirname(fileName);
-        const resizedFileName = dirName === '.' ? `${baseName}-${size}${ext}` : `${dirName}/${baseName}-${size}${ext}`;
-        const mimeType = this.getMimeType(ext);
-        this.logVerbose('Computed resized file name', { originalFileName: fileName, resizedFileName, size });
+        const outputExt = this.getExtensionForFormat(outputFormat, ext);
+        const mimeType = this.getMimeTypeForFormat(outputFormat, ext);
+        const resizedFileName = dirName === '.' ? `${baseName}-${size}${outputExt}` : `${dirName}/${baseName}-${size}${outputExt}`;
+        this.logVerbose('Computed resized file name', { originalFileName: fileName, resizedFileName, size, outputFormat });
         this.logVerbose('Checking for cached resized image', { resizedFileName });
         try {
             const stat = await this.getMediaStat(resizedFileName);
@@ -270,6 +439,11 @@ let MediasService = MediasService_1 = class MediasService {
             this.logDebug('Cached resized image found', { resizedFileName, size: stat.size, etag });
             if (ifNoneMatch === etag) {
                 this.logDebug('Cache hit on resized image - returning 304 Not Modified', { resizedFileName, etag });
+                this.options.onCacheHit?.({
+                    fileName: resizedFileName,
+                    size,
+                    notModified: true,
+                });
                 return {
                     buffer: null,
                     mimeType,
@@ -279,6 +453,21 @@ let MediasService = MediasService_1 = class MediasService {
             }
             this.logInfo('Serving cached resized image', { resizedFileName, size: stat.size });
             const buffer = await this.getMedia(resizedFileName);
+            const durationMs = Date.now() - startTime;
+            this.options.onCacheHit?.({
+                fileName: resizedFileName,
+                size,
+                notModified: false,
+            });
+            this.options.onImageResized?.({
+                originalFileName: fileName,
+                resizedFileName,
+                requestedSize: size,
+                finalSize: buffer.length,
+                fromCache: true,
+                durationMs,
+                format: outputFormat,
+            });
             return {
                 buffer,
                 mimeType,
@@ -306,10 +495,12 @@ let MediasService = MediasService_1 = class MediasService {
                 finalSize = metadata.width;
             }
         }
-        this.logVerbose('Resizing image with Sharp', { fileName, targetWidth: finalSize });
-        const resizedBuffer = await (0, sharp_1.default)(originalFile).resize(finalSize).toBuffer();
+        this.logVerbose('Resizing image with Sharp', { fileName, targetWidth: finalSize, outputFormat });
+        let pipeline = (0, sharp_1.default)(originalFile).resize(finalSize);
+        pipeline = this.applyFormat(pipeline, outputFormat);
+        const resizedBuffer = await pipeline.toBuffer();
         const etag = this.generateETagFromBuffer(resizedBuffer);
-        this.logDebug('Image resized', { fileName, originalSize: originalFile.length, resizedSize: resizedBuffer.length, etag });
+        this.logDebug('Image resized', { fileName, originalSize: originalFile.length, resizedSize: resizedBuffer.length, outputFormat, etag });
         if (ifNoneMatch === etag) {
             this.logDebug('Generated image matches ETag - returning 304 Not Modified', { fileName, etag });
             return {
@@ -322,6 +513,16 @@ let MediasService = MediasService_1 = class MediasService {
         this.logVerbose('Caching resized image to S3 (async)', { resizedFileName });
         this.uploadMedia(resizedFileName, resizedBuffer).catch((error) => {
             this.logWarn('Failed to cache resized image', { resizedFileName, error: error instanceof Error ? error.message : 'Unknown error' });
+        });
+        const durationMs = Date.now() - startTime;
+        this.options.onImageResized?.({
+            originalFileName: fileName,
+            resizedFileName,
+            requestedSize: size,
+            finalSize: resizedBuffer.length,
+            fromCache: false,
+            durationMs,
+            format: outputFormat,
         });
         this.logInfo('Serving freshly resized image', { fileName, size, resizedSize: resizedBuffer.length });
         return {

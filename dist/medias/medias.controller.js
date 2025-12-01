@@ -25,9 +25,11 @@ let MediasController = MediasController_1 = class MediasController {
         this.logger = new common_1.Logger(MediasController_1.name);
     }
     async getMedia(params, query, req, res) {
+        const startTime = Date.now();
         const fileName = Array.isArray(params.fileName) ? params.fileName.join('/') : params.fileName;
         const { size } = query;
         const ifNoneMatch = req.headers['if-none-match'];
+        const acceptHeader = req.headers['accept'];
         try {
             if (size && parseInt(size, 10) > 0) {
                 const requestedSize = parseInt(size, 10);
@@ -37,11 +39,20 @@ let MediasController = MediasController_1 = class MediasController {
                     }
                     throw new common_1.BadRequestException(`Cannot resize non-image files. Remove the size parameter to serve the file.`);
                 }
-                const result = await this.mediasService.getResizedImage(fileName, requestedSize, ifNoneMatch);
+                const format = this.mediasService.negotiateFormat(acceptHeader);
+                const result = await this.mediasService.getResizedImage(fileName, requestedSize, ifNoneMatch, format);
+                const duration = Date.now() - startTime;
                 if (result.notModified) {
+                    res.setHeader('X-Processing-Time', `${duration}ms`);
+                    res.setHeader('X-Cache', 'HIT');
+                    res.setHeader('X-Resize', 'yes');
                     res.status(medias_constants_1.HTTP_STATUS.NOT_MODIFIED).end();
                     return;
                 }
+                res.setHeader('Vary', 'Accept');
+                res.setHeader('X-Processing-Time', `${duration}ms`);
+                res.setHeader('X-Cache', 'MISS');
+                res.setHeader('X-Resize', 'yes');
                 res.setHeader('Content-Type', result.mimeType);
                 res.setHeader('Content-Length', result.buffer.length);
                 res.setHeader('Content-Disposition', `inline; filename="${fileName}"`);
@@ -51,10 +62,17 @@ let MediasController = MediasController_1 = class MediasController {
             }
             else {
                 const result = await this.mediasService.getMediaStream(fileName, ifNoneMatch);
+                const duration = Date.now() - startTime;
                 if (result.notModified) {
+                    res.setHeader('X-Processing-Time', `${duration}ms`);
+                    res.setHeader('X-Cache', 'HIT');
+                    res.setHeader('X-Resize', 'no');
                     res.status(medias_constants_1.HTTP_STATUS.NOT_MODIFIED).end();
                     return;
                 }
+                res.setHeader('X-Processing-Time', `${duration}ms`);
+                res.setHeader('X-Cache', 'MISS');
+                res.setHeader('X-Resize', 'no');
                 res.setHeader('Content-Type', result.mimeType);
                 res.setHeader('Content-Length', result.size);
                 res.setHeader('Content-Disposition', `inline; filename="${fileName}"`);
