@@ -32,6 +32,14 @@ export interface FileUploadedEvent {
         height: number;
     };
 }
+export interface PreGenerateJob {
+    fileName: string;
+    sizes: number[];
+}
+export interface MediasPreGenerationOptions {
+    sizes: number[];
+    dispatchJob?: (job: PreGenerateJob) => Promise<void>;
+}
 export type MediasLogLevel = LogLevel | 'none';
 export interface MediasModuleOptions {
     s3: S3Options;
@@ -48,6 +56,7 @@ export interface MediasModuleOptions {
     onImageResized?: (event: ImageResizedEvent) => void;
     onCacheHit?: (event: CacheHitEvent) => void;
     onUploaded?: (event: FileUploadedEvent) => void;
+    preGeneration?: MediasPreGenerationOptions;
 }
 export interface MediasModuleOptionsFactory {
     createMediasModuleOptions(): Promise<MediasModuleOptions> | MediasModuleOptions;

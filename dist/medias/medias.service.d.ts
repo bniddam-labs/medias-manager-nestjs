@@ -51,7 +51,9 @@ export declare class MediasService {
     getMedia(fileName: string): Promise<Buffer>;
     getMediaFileStream(fileName: string): Promise<Readable>;
     getMediaStat(fileName: string): Promise<MediaStatResult>;
-    uploadMedia(fileName: string, file: Buffer, originalName?: string): Promise<void>;
+    private preGenerateInline;
+    uploadMedia(fileName: string, file: Buffer, originalName?: string, skipPreGeneration?: boolean): Promise<void>;
+    private triggerPreGeneration;
     deleteMedia(fileName: string): Promise<void>;
     getImageStream(fileName: string, ifNoneMatch?: string): Promise<MediaStreamResponse>;
     getResizedImage(fileName: string, size: number, ifNoneMatch?: string, format?: ImageFormat): Promise<MediaBufferResponse>;

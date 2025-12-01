@@ -329,8 +329,90 @@ let MediasService = MediasService_1 = class MediasService {
             throw new common_1.NotFoundException(`File with name ${fileName} not found`);
         }
     }
-    async uploadMedia(fileName, file, originalName) {
-        this.logVerbose('Uploading file to S3', { fileName, size: file.length, originalName });
+    async preGenerateInline(fileName, buffer, sizes) {
+        if (!this.isResizable(fileName)) {
+            this.logDebug('File is not resizable, skipping pre-generation', { fileName });
+            return;
+        }
+        const maxWidth = this.options.maxResizeWidth ?? medias_constants_1.DEFAULT_MAX_RESIZE_WIDTH;
+        const autoPreventUpscale = this.options.autoPreventUpscale ?? true;
+        let originalWidth;
+        try {
+            const metadata = await (0, sharp_1.default)(buffer).metadata();
+            originalWidth = metadata.width;
+            this.logDebug('Original image metadata for pre-generation', {
+                fileName,
+                width: originalWidth,
+                height: metadata.height,
+            });
+        }
+        catch (error) {
+            this.logWarn('Failed to get original image metadata for pre-generation', {
+                fileName,
+                error: error instanceof Error ? error.message : 'Unknown error',
+            });
+            return;
+        }
+        const ext = path.extname(fileName);
+        const baseName = path.basename(fileName, ext);
+        const dirName = path.dirname(fileName);
+        const outputFormat = this.options.preferredFormat ?? 'original';
+        const outputExt = this.getExtensionForFormat(outputFormat, ext);
+        this.logInfo('Starting pre-generation of image variants', {
+            fileName,
+            sizes,
+            outputFormat,
+            originalWidth,
+        });
+        for (const size of sizes) {
+            try {
+                if (size > maxWidth) {
+                    this.logWarn('Pre-generation size exceeds maxResizeWidth, skipping', {
+                        fileName,
+                        size,
+                        maxWidth,
+                    });
+                    continue;
+                }
+                let finalSize = size;
+                if (autoPreventUpscale && originalWidth && size > originalWidth) {
+                    this.logDebug('Pre-generation size exceeds original width, clamping', {
+                        fileName,
+                        requestedSize: size,
+                        originalWidth,
+                    });
+                    finalSize = originalWidth;
+                }
+                const resizedFileName = dirName === '.' ? `${baseName}-${size}${outputExt}` : `${dirName}/${baseName}-${size}${outputExt}`;
+                this.logVerbose('Generating pre-generation variant', {
+                    fileName,
+                    size,
+                    finalSize,
+                    resizedFileName,
+                });
+                let pipeline = (0, sharp_1.default)(buffer).resize(finalSize);
+                pipeline = this.applyFormat(pipeline, outputFormat);
+                const resizedBuffer = await pipeline.toBuffer();
+                await this.uploadMedia(resizedFileName, resizedBuffer, undefined, true);
+                this.logInfo('Pre-generation variant created', {
+                    fileName,
+                    size,
+                    resizedFileName,
+                    resizedSize: resizedBuffer.length,
+                });
+            }
+            catch (error) {
+                this.logWarn('Failed to pre-generate variant, continuing with other sizes', {
+                    fileName,
+                    size,
+                    error: error instanceof Error ? error.message : 'Unknown error',
+                });
+            }
+        }
+        this.logInfo('Pre-generation completed', { fileName, totalSizes: sizes.length });
+    }
+    async uploadMedia(fileName, file, originalName, skipPreGeneration = false) {
+        this.logVerbose('Uploading file to S3', { fileName, size: file.length, originalName, skipPreGeneration });
         if (this.isImage(fileName)) {
             try {
                 const metadata = await (0, sharp_1.default)(file).metadata();
@@ -367,6 +449,9 @@ let MediasService = MediasService_1 = class MediasService {
                     isImage: true,
                     dimensions: metadata.width && metadata.height ? { width: metadata.width, height: metadata.height } : undefined,
                 });
+                if (!skipPreGeneration) {
+                    await this.triggerPreGeneration(fileName, file);
+                }
                 return;
             }
             catch (error) {
@@ -383,6 +468,55 @@ let MediasService = MediasService_1 = class MediasService {
             size: file.length,
             isImage: false,
         });
+        if (!skipPreGeneration) {
+            await this.triggerPreGeneration(fileName, file);
+        }
+    }
+    async triggerPreGeneration(fileName, buffer) {
+        const preGen = this.options.preGeneration;
+        if (!preGen || !preGen.sizes || preGen.sizes.length === 0) {
+            return;
+        }
+        if (!this.isResizable(fileName)) {
+            this.logDebug('File is not resizable, skipping pre-generation trigger', { fileName });
+            return;
+        }
+        this.logDebug('Triggering pre-generation', {
+            fileName,
+            sizes: preGen.sizes,
+            hasDispatchJob: !!preGen.dispatchJob,
+        });
+        try {
+            if (preGen.dispatchJob) {
+                this.logInfo('Dispatching pre-generation job to external queue', {
+                    fileName,
+                    sizes: preGen.sizes,
+                });
+                await preGen.dispatchJob({
+                    fileName,
+                    sizes: preGen.sizes,
+                });
+                this.logInfo('Pre-generation job dispatched successfully', { fileName });
+            }
+            else {
+                this.logInfo('Starting inline pre-generation (fire-and-forget)', {
+                    fileName,
+                    sizes: preGen.sizes,
+                });
+                this.preGenerateInline(fileName, buffer, preGen.sizes).catch((error) => {
+                    this.logError('Inline pre-generation failed', {
+                        fileName,
+                        error: error instanceof Error ? error.message : 'Unknown error',
+                    });
+                });
+            }
+        }
+        catch (error) {
+            this.logError('Failed to trigger pre-generation', {
+                fileName,
+                error: error instanceof Error ? error.message : 'Unknown error',
+            });
+        }
     }
     async deleteMedia(fileName) {
         this.logVerbose('Deleting file from S3', { fileName });
