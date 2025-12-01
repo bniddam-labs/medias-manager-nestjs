@@ -18,7 +18,7 @@ export { DeleteMediaParamsDto } from './medias/dto/delete-media.dto';
 export { GetMediaParamsDto, GetMediaQueryDto } from './medias/dto/get-media.dto';
 
 // Interfaces & Types
-export type { MediasModuleOptions, MediasModuleAsyncOptions, MediasModuleOptionsFactory, S3Options, MediasLogLevel, ImageResizedEvent, CacheHitEvent, FileUploadedEvent } from './medias/interfaces/medias-module-options.interface';
+export type { MediasModuleOptions, MediasModuleAsyncOptions, MediasModuleOptionsFactory, S3Options, MediasLogLevel, ImageResizedEvent, CacheHitEvent, FileUploadedEvent, PreGenerateJob, MediasPreGenerationOptions } from './medias/interfaces/medias-module-options.interface';
 export type { ImageFormat } from './medias/medias.constants';
 
 // Constants

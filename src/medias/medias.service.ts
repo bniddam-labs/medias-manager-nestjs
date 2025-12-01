@@ -450,14 +450,128 @@ export class MediasService {
     }
   }
 
+  // ============================================
+  // Pre-generation Logic
+  // ============================================
+
+  /**
+   * Pre-generate image variants inline (synchronous fallback)
+   * @param fileName Original file name
+   * @param buffer Original file buffer
+   * @param sizes Sizes to pre-generate (in pixels)
+   */
+  private async preGenerateInline(fileName: string, buffer: Buffer, sizes: number[]): Promise<void> {
+    if (!this.isResizable(fileName)) {
+      this.logDebug('File is not resizable, skipping pre-generation', { fileName });
+      return;
+    }
+
+    const maxWidth = this.options.maxResizeWidth ?? DEFAULT_MAX_RESIZE_WIDTH;
+    const autoPreventUpscale = this.options.autoPreventUpscale ?? true;
+
+    // Get original image metadata
+    let originalWidth: number | undefined;
+    try {
+      const metadata = await sharp(buffer).metadata();
+      originalWidth = metadata.width;
+      this.logDebug('Original image metadata for pre-generation', {
+        fileName,
+        width: originalWidth,
+        height: metadata.height,
+      });
+    } catch (error) {
+      this.logWarn('Failed to get original image metadata for pre-generation', {
+        fileName,
+        error: error instanceof Error ? error.message : 'Unknown error',
+      });
+      return;
+    }
+
+    const ext = path.extname(fileName);
+    const baseName = path.basename(fileName, ext);
+    const dirName = path.dirname(fileName);
+
+    // Determine output format
+    const outputFormat = this.options.preferredFormat ?? 'original';
+    const outputExt = this.getExtensionForFormat(outputFormat, ext);
+
+    this.logInfo('Starting pre-generation of image variants', {
+      fileName,
+      sizes,
+      outputFormat,
+      originalWidth,
+    });
+
+    // Generate each size (best effort)
+    for (const size of sizes) {
+      try {
+        // Validate size against maxWidth
+        if (size > maxWidth) {
+          this.logWarn('Pre-generation size exceeds maxResizeWidth, skipping', {
+            fileName,
+            size,
+            maxWidth,
+          });
+          continue;
+        }
+
+        // Prevent upscaling if enabled
+        let finalSize = size;
+        if (autoPreventUpscale && originalWidth && size > originalWidth) {
+          this.logDebug('Pre-generation size exceeds original width, clamping', {
+            fileName,
+            requestedSize: size,
+            originalWidth,
+          });
+          finalSize = originalWidth;
+        }
+
+        // Build resized file name
+        const resizedFileName = dirName === '.' ? `${baseName}-${size}${outputExt}` : `${dirName}/${baseName}-${size}${outputExt}`;
+
+        // Generate variant
+        this.logVerbose('Generating pre-generation variant', {
+          fileName,
+          size,
+          finalSize,
+          resizedFileName,
+        });
+
+        let pipeline = sharp(buffer).resize(finalSize);
+        pipeline = this.applyFormat(pipeline, outputFormat);
+        const resizedBuffer = await pipeline.toBuffer();
+
+        // Upload variant (skip pre-generation for variants to avoid recursion)
+        await this.uploadMedia(resizedFileName, resizedBuffer, undefined, true);
+
+        this.logInfo('Pre-generation variant created', {
+          fileName,
+          size,
+          resizedFileName,
+          resizedSize: resizedBuffer.length,
+        });
+      } catch (error) {
+        // Best effort: log error but continue with other sizes
+        this.logWarn('Failed to pre-generate variant, continuing with other sizes', {
+          fileName,
+          size,
+          error: error instanceof Error ? error.message : 'Unknown error',
+        });
+      }
+    }
+
+    this.logInfo('Pre-generation completed', { fileName, totalSizes: sizes.length });
+  }
+
   /**
    * Upload any media file to S3
    * @param fileName Name of the file in S3
    * @param file Buffer containing the file data
    * @param originalName Optional original file name (for metadata)
+   * @param skipPreGeneration Internal flag to prevent recursion during variant uploads
    */
-  async uploadMedia(fileName: string, file: Buffer, originalName?: string): Promise<void> {
-    this.logVerbose('Uploading file to S3', { fileName, size: file.length, originalName });
+  async uploadMedia(fileName: string, file: Buffer, originalName?: string, skipPreGeneration = false): Promise<void> {
+    this.logVerbose('Uploading file to S3', { fileName, size: file.length, originalName, skipPreGeneration });
 
     // Check if file is an image and extract metadata
     if (this.isImage(fileName)) {
@@ -506,6 +620,11 @@ export class MediasService {
           dimensions: metadata.width && metadata.height ? { width: metadata.width, height: metadata.height } : undefined,
         });
 
+        // Trigger pre-generation if configured and not skipped
+        if (!skipPreGeneration) {
+          await this.triggerPreGeneration(fileName, file);
+        }
+
         return;
       } catch (error) {
         this.logWarn('Failed to extract image metadata, uploading without enrichment', {
@@ -526,6 +645,74 @@ export class MediasService {
       size: file.length,
       isImage: false,
     });
+
+    // Trigger pre-generation if configured and not skipped
+    if (!skipPreGeneration) {
+      await this.triggerPreGeneration(fileName, file);
+    }
+  }
+
+  /**
+   * Trigger pre-generation of image variants (inline or via queue)
+   * @param fileName Original file name
+   * @param buffer Original file buffer
+   */
+  private async triggerPreGeneration(fileName: string, buffer: Buffer): Promise<void> {
+    const preGen = this.options.preGeneration;
+
+    // Skip if pre-generation not configured or no sizes specified
+    if (!preGen || !preGen.sizes || preGen.sizes.length === 0) {
+      return;
+    }
+
+    // Skip if file is not resizable
+    if (!this.isResizable(fileName)) {
+      this.logDebug('File is not resizable, skipping pre-generation trigger', { fileName });
+      return;
+    }
+
+    this.logDebug('Triggering pre-generation', {
+      fileName,
+      sizes: preGen.sizes,
+      hasDispatchJob: !!preGen.dispatchJob,
+    });
+
+    try {
+      if (preGen.dispatchJob) {
+        // Delegate to external queue
+        this.logInfo('Dispatching pre-generation job to external queue', {
+          fileName,
+          sizes: preGen.sizes,
+        });
+
+        await preGen.dispatchJob({
+          fileName,
+          sizes: preGen.sizes,
+        });
+
+        this.logInfo('Pre-generation job dispatched successfully', { fileName });
+      } else {
+        // Fallback to inline generation (fire-and-forget to avoid blocking upload)
+        this.logInfo('Starting inline pre-generation (fire-and-forget)', {
+          fileName,
+          sizes: preGen.sizes,
+        });
+
+        // Fire-and-forget: don't await, log errors
+        this.preGenerateInline(fileName, buffer, preGen.sizes).catch((error) => {
+          this.logError('Inline pre-generation failed', {
+            fileName,
+            error: error instanceof Error ? error.message : 'Unknown error',
+          });
+        });
+      }
+    } catch (error) {
+      // Best effort: log error but don't fail the upload
+      this.logError('Failed to trigger pre-generation', {
+        fileName,
+        error: error instanceof Error ? error.message : 'Unknown error',
+      });
+    }
   }
 
   /**

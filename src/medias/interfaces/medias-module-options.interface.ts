@@ -61,6 +61,36 @@ export interface FileUploadedEvent {
 }
 
 /**
+ * Pre-generation job for image variants
+ */
+export interface PreGenerateJob {
+  /** Full path to the original file in the bucket */
+  fileName: string;
+  /** Sizes to generate (in pixels) */
+  sizes: number[];
+}
+
+/**
+ * Pre-generation configuration options
+ */
+export interface MediasPreGenerationOptions {
+  /**
+   * List of sizes in pixels to pre-generate (e.g., [200, 400, 800])
+   * If empty or undefined, no pre-generation occurs.
+   */
+  sizes: number[];
+
+  /**
+   * Optional: Callback to delegate variant creation to an external queue
+   * - If defined: uploadMedia dispatches a job instead of generating inline
+   * - If undefined: Falls back to inline generation (synchronous loop in process)
+   *
+   * Use this for offloading heavy work to background workers (Bull, BullMQ, RabbitMQ, etc.)
+   */
+  dispatchJob?: (job: PreGenerateJob) => Promise<void>;
+}
+
+/**
  * Log level for the medias module
  * - 'none': No logging
  * - 'error': Only errors
@@ -202,6 +232,26 @@ export interface MediasModuleOptions {
    * Useful for tracking uploads, updating databases, or triggering workflows.
    */
   onUploaded?: (event: FileUploadedEvent) => void;
+
+  /**
+   * Optional: Pre-generation configuration for image variants
+   *
+   * When enabled, generates specified image sizes immediately upon upload
+   * instead of waiting for the first request. This reduces latency and CPU spikes
+   * for frequently accessed images.
+   *
+   * Example:
+   * ```typescript
+   * preGeneration: {
+   *   sizes: [200, 400, 800],  // Generate these sizes on upload
+   *   dispatchJob: async (job) => {
+   *     // Optional: delegate to a queue (Bull, BullMQ, etc.)
+   *     await imageQueue.add('resize', job);
+   *   }
+   * }
+   * ```
+   */
+  preGeneration?: MediasPreGenerationOptions;
 }
 
 /**
