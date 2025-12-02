@@ -4,6 +4,7 @@ import { MediasService } from './medias.service';
 import { MEDIAS_MODULE_OPTIONS } from './medias.constants';
 import { MinioService } from 'nestjs-minio-client';
 import { Readable } from 'stream';
+import { MediasLoggerService, MediasStorageService, MediasValidationService, MediasResizeService } from './services';
 
 // Mock sharp module
 jest.mock('sharp', () => {
@@ -45,6 +46,10 @@ describe('MediasService', () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         MediasService,
+        MediasLoggerService,
+        MediasStorageService,
+        MediasValidationService,
+        MediasResizeService,
         {
           provide: MinioService,
           useValue: {
@@ -330,6 +335,10 @@ describe('MediasService', () => {
       const moduleWithUpscaleAllowed: TestingModule = await Test.createTestingModule({
         providers: [
           MediasService,
+          MediasLoggerService,
+          MediasStorageService,
+          MediasValidationService,
+          MediasResizeService,
           {
             provide: MinioService,
             useValue: {

@@ -7,6 +7,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.5.0] - 2025-12-01
+
+### Changed
+- **Major service refactoring** for better maintainability
+  - Split `MediasService` (1200+ lines) into specialized internal services:
+    - `MediasLoggerService`: Configurable logging
+    - `MediasStorageService`: S3/MinIO operations (get, put, delete, stat)
+    - `MediasValidationService`: File type checking, size validation, ETag generation
+    - `MediasResizeService`: Image resizing (buffer, stream, batch, pre-generation)
+  - `MediasService` remains the public facade (unchanged API)
+  - Internal services are not exported (implementation detail)
+  - Each service now ~200-400 lines (vs 1200+ before)
+
+## [3.4.0] - 2025-12-01
+
+### Added
+- **Batch resize** (`batchResize()` method)
+  - Resize multiple images with multiple sizes in a single call
+  - Returns detailed results for each variant (success/failure with error messages)
+  - Use cases: regenerate thumbnails after format changes, pre-warm cache, bulk operations
+  - Respects `maxResizeWidth` and `autoPreventUpscale` settings
+- Exported `BatchResizeRequestItem` and `BatchResizeResultItem` types
+
+### Changed
+- Refactored variant generation into shared `generateVariant()` method
+  - Used by both `preGenerateInline()` and `batchResize()`
+  - Consistent behavior and error handling
+
 ## [3.3.0] - 2025-12-01
 
 ### Added

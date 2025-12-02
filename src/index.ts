@@ -8,7 +8,7 @@ export { MediasModule } from './medias/medias.module';
 
 // Services
 export { MediasService } from './medias/medias.service';
-export type { MediaStreamResponse, MediaBufferResponse, MediaStatResult } from './medias/medias.service';
+export type { MediaStreamResponse, MediaBufferResponse, MediaStatResult, BatchResizeRequestItem, BatchResizeResultItem } from './medias/medias.service';
 
 // Controllers
 export { MediasController } from './medias/medias.controller';

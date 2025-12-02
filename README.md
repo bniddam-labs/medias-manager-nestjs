@@ -459,10 +459,40 @@ Works great with **[@bniddam-labs/lazy-media-vuejs](https://github.com/bniddam-l
 | `getMediaStat(fileName)`                                  | Get file metadata                        |
 | `uploadMedia(fileName, buffer, originalName?)`            | Upload media to S3 (with pre-generation) |
 | `deleteMedia(fileName)`                                   | Delete media from S3                     |
+| `batchResize(items)`                                      | Batch resize multiple images             |
 | `isImage(fileName)`                                       | Check if file is an image                |
 | `isResizable(fileName)`                                   | Check if file can be resized             |
 | `getMimeType(extension)`                                  | Get MIME type for extension              |
 | `negotiateFormat(acceptHeader?)`                          | Get best format from Accept header       |
+
+### 🔄 Batch Resize
+
+Regenerate thumbnails or prepare variants in bulk:
+
+```typescript
+const results = await mediasService.batchResize([
+  { fileName: 'photo1.jpg', sizes: [200, 400, 800] },
+  { fileName: 'photo2.png', sizes: [200, 400] },
+]);
+
+// Results array:
+// [
+//   { fileName: 'photo1.jpg', size: 200, resizedFileName: 'photo1-200.jpg', success: true },
+//   { fileName: 'photo1.jpg', size: 400, resizedFileName: 'photo1-400.jpg', success: true },
+//   ...
+// ]
+
+// Check for failures
+const failures = results.filter(r => !r.success);
+if (failures.length > 0) {
+  console.error('Some variants failed:', failures);
+}
+```
+
+**Use cases:**
+- Re-generate all thumbs after changing quality/format settings
+- Prepare all sizes for an event, collection, or catalog
+- Backoffice operations to pre-warm cache
 
 ### Exported Constants
 

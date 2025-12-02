@@ -4,6 +4,10 @@ import { MEDIAS_MODULE_OPTIONS } from './medias.constants';
 import { MediasController } from './medias.controller';
 import { MediasService } from './medias.service';
 import { MediasModuleAsyncOptions, MediasModuleOptions, MediasModuleOptionsFactory } from './interfaces/medias-module-options.interface';
+import { MediasLoggerService, MediasStorageService, MediasValidationService, MediasResizeService } from './services';
+
+// Internal services (not exported)
+const INTERNAL_SERVICES = [MediasLoggerService, MediasStorageService, MediasValidationService, MediasResizeService];
 
 @Module({})
 export class MediasModule {
@@ -27,6 +31,7 @@ export class MediasModule {
           provide: MEDIAS_MODULE_OPTIONS,
           useValue: options,
         },
+        ...INTERNAL_SERVICES,
         MediasService,
       ],
       exports: [MediasService],
@@ -53,7 +58,7 @@ export class MediasModule {
         }),
       ],
       controllers,
-      providers: [...this.createAsyncProviders(options), MediasService],
+      providers: [...this.createAsyncProviders(options), ...INTERNAL_SERVICES, MediasService],
       exports: [MediasService],
     };
   }

@@ -1,6 +1,6 @@
 export { MediasModule } from './medias/medias.module';
 export { MediasService } from './medias/medias.service';
-export type { MediaStreamResponse, MediaBufferResponse, MediaStatResult } from './medias/medias.service';
+export type { MediaStreamResponse, MediaBufferResponse, MediaStatResult, BatchResizeRequestItem, BatchResizeResultItem } from './medias/medias.service';
 export { MediasController } from './medias/medias.controller';
 export { DeleteMediaParamsDto } from './medias/dto/delete-media.dto';
 export { GetMediaParamsDto, GetMediaQueryDto } from './medias/dto/get-media.dto';
