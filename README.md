@@ -48,8 +48,11 @@ yarn add @bniddam-labs/medias-manager-nestjs
 ### 📥 Install from GitHub
 
 ```bash
+# pnpm (recommended)
 pnpm add github:bniddam-labs/medias-manager-nestjs
 ```
+
+> **Note:** The library is automatically built during installation via the `prepare` script. The `dist/` directory is generated on-the-fly and is not committed to the repository. No additional build steps are required after installation.
 
 ---
 
