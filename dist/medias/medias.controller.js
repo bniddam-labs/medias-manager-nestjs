@@ -89,7 +89,7 @@ let MediasController = MediasController_1 = class MediasController {
             }
         }
         catch (error) {
-            if (error instanceof common_1.BadRequestException) {
+            if (error instanceof common_1.BadRequestException || error instanceof common_1.NotFoundException) {
                 throw error;
             }
             this.logger.error(`Error serving media: ${error instanceof Error ? error.message : 'Unknown error'}`);

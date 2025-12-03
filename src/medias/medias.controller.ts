@@ -1,4 +1,4 @@
-import { BadRequestException, Controller, Delete, Get, InternalServerErrorException, Logger, Param, Query, Req, Res } from '@nestjs/common';
+import { BadRequestException, Controller, Delete, Get, InternalServerErrorException, Logger, NotFoundException, Param, Query, Req, Res } from '@nestjs/common';
 import { Request, Response } from 'express';
 import { DeleteMediaParamsDto } from './dto/delete-media.dto';
 import { GetMediaParamsDto, GetMediaQueryDto } from './dto/get-media.dto';
@@ -94,7 +94,7 @@ export class MediasController {
         });
       }
     } catch (error) {
-      if (error instanceof BadRequestException) {
+      if (error instanceof BadRequestException || error instanceof NotFoundException) {
         throw error;
       }
       this.logger.error(`Error serving media: ${error instanceof Error ? error.message : 'Unknown error'}`);
