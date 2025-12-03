@@ -1,7 +1,7 @@
 import { BadRequestException, Controller, Delete, Get, InternalServerErrorException, Logger, NotFoundException, Param, Query, Req, Res } from '@nestjs/common';
 import { Request, Response } from 'express';
-import { DeleteMediaParamsDto } from './dto/delete-media.dto';
-import { GetMediaParamsDto, GetMediaQueryDto } from './dto/get-media.dto';
+import { DeleteMediaParamsLooseDto } from './dto/delete-media.dto';
+import { GetMediaParamsLooseDto, GetMediaQueryDto } from './dto/get-media.dto';
 import { HTTP_STATUS } from './medias.constants';
 import { MediasService } from './medias.service';
 
@@ -12,7 +12,7 @@ export class MediasController {
   constructor(private readonly mediasService: MediasService) {}
 
   @Get('*fileName')
-  async getMedia(@Param() params: GetMediaParamsDto, @Query() query: GetMediaQueryDto, @Req() req: Request, @Res() res: Response): Promise<void> {
+  async getMedia(@Param() params: GetMediaParamsLooseDto, @Query() query: GetMediaQueryDto, @Req() req: Request, @Res() res: Response): Promise<void> {
     const startTime = Date.now();
 
     // Wildcard params return an array in path-to-regexp v8
@@ -103,7 +103,7 @@ export class MediasController {
   }
 
   @Delete('*fileName')
-  async deleteMedia(@Param() params: DeleteMediaParamsDto): Promise<void> {
+  async deleteMedia(@Param() params: DeleteMediaParamsLooseDto): Promise<void> {
     const fileName = Array.isArray(params.fileName) ? params.fileName.join('/') : params.fileName;
     return this.mediasService.deleteMedia(fileName);
   }

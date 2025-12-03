@@ -7,6 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [3.6.0] - 2025-12-03
+
+### Added
+- **Configurable filename validation** (`strictFilenameValidation` option)
+  - `true` (default): Whitelist approach - only `a-z`, `A-Z`, `0-9`, `.`, `-`, `_`, `/` allowed
+  - `false`: Blacklist approach - only control characters (0x00-0x1F) blocked
+  - Allows backward compatibility with existing S3 files containing special characters
+- New DTOs for loose validation:
+  - `GetMediaParamsLooseDto`: Accepts Unicode, spaces, parentheses, apostrophes, etc.
+  - `DeleteMediaParamsLooseDto`: Same loose validation for delete operations
+- Schema factory functions for custom controllers:
+  - `createGetMediaParamsSchema(strict?: boolean)`: Create schema with configurable strictness
+  - `createDeleteMediaParamsSchema(strict?: boolean)`: Create schema with configurable strictness
+- Built-in controller now uses loose DTOs for maximum compatibility
+
+### Changed
+- Default exported DTOs (`GetMediaParamsDto`, `DeleteMediaParamsDto`) now use strict validation
+- Security checks (path traversal, extension whitelist, max length) always applied regardless of mode
+
 ## [3.5.0] - 2025-12-01
 
 ### Changed

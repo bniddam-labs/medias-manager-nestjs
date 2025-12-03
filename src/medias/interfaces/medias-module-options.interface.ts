@@ -252,6 +252,26 @@ export interface MediasModuleOptions {
    * ```
    */
   preGeneration?: MediasPreGenerationOptions;
+
+  /**
+   * Optional: Enable strict filename validation using whitelist (default: true)
+   *
+   * When true (default): Only alphanumeric characters, dots, hyphens, underscores,
+   * and forward slashes are allowed. This is the safest option for new S3 buckets.
+   *
+   * When false: Only control characters (0x00-0x1F) are blocked. This allows
+   * spaces, parentheses, apostrophes, Unicode characters, etc. Useful for
+   * backward compatibility with existing S3 buckets that already contain files
+   * with special characters.
+   *
+   * Security checks always applied regardless of this setting:
+   * - Path traversal prevention (../, /.., leading /)
+   * - File extension whitelist
+   * - Maximum filename length
+   *
+   * @default true
+   */
+  strictFilenameValidation?: boolean;
 }
 
 /**

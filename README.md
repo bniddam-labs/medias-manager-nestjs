@@ -131,6 +131,7 @@ interface MediasModuleOptions {
   maxResizeWidth?: number; // Max resize width in px (default: 1200)
   autoPreventUpscale?: boolean; // Prevent upscaling beyond original (default: true)
   maxOriginalFileSize?: number; // Max size in bytes for on-the-fly resize (default: 15MB)
+  strictFilenameValidation?: boolean; // Strict filename validation (default: true)
   logLevel?: MediasLogLevel; // Logging verbosity (default: 'none')
 }
 ```
@@ -399,10 +400,65 @@ The module uses different ETag generation strategies depending on the content ty
 
 - **Path traversal prevention**: `../` patterns blocked
 - **File extension whitelist**: Only allowed media types
-- **Character validation**: Alphanumeric, hyphens, underscores only
+- **Filename validation**: Two modes available (see below)
 - **Resize width limits**: 1-1200px by default (configurable via `maxResizeWidth`)
 - **Upscale prevention**: Images won't be enlarged beyond original dimensions (configurable via `autoPreventUpscale`)
 - **File size limits**: Original files >15MB rejected for resize (configurable via `maxOriginalFileSize`)
+
+### 🔤 Filename Validation Modes
+
+The module supports two filename validation modes:
+
+| Mode | Option | Allowed Characters | Use Case |
+|------|--------|-------------------|----------|
+| **Strict** (default) | `strictFilenameValidation: true` | `a-z`, `A-Z`, `0-9`, `.`, `-`, `_`, `/` | New S3 buckets |
+| **Loose** | `strictFilenameValidation: false` | Everything except control chars (0x00-0x1F) | Existing S3 files with special chars |
+
+**Loose mode allows:**
+- Spaces: `my file.jpg`
+- Parentheses: `photo (1).jpg`
+- Apostrophes: `john's photo.jpg`
+- Unicode: `photo–2023.jpg` (em-dash), `été.jpg` (accents)
+- And more: `@`, `#`, `&`, etc.
+
+**Security always applied (both modes):**
+- Path traversal prevention (`../`, `/..`, leading `/`)
+- File extension whitelist
+- Maximum filename length (255 chars)
+
+```typescript
+// For new buckets (strict mode - default)
+MediasModule.forRoot({
+  s3: { /* ... */ },
+  strictFilenameValidation: true,  // Can be omitted (default)
+});
+
+// For existing S3 buckets with special characters
+MediasModule.forRoot({
+  s3: { /* ... */ },
+  strictFilenameValidation: false,  // Loose mode
+});
+```
+
+**For custom controllers**, use the appropriate DTO:
+```typescript
+import { 
+  GetMediaParamsDto,      // Strict mode (default)
+  GetMediaParamsLooseDto, // Loose mode
+  createGetMediaParamsSchema, // Factory for custom schemas
+} from '@bniddam-labs/medias-manager-nestjs';
+
+// Option 1: Use pre-built DTOs
+@Get(':fileName')
+get(@Param() params: GetMediaParamsDto) { /* strict */ }
+
+@Get(':fileName')
+get(@Param() params: GetMediaParamsLooseDto) { /* loose */ }
+
+// Option 2: Create custom DTO with factory
+import { createZodDto } from 'nestjs-zod';
+const MyDto = createZodDto(createGetMediaParamsSchema(false)); // loose
+```
 
 ### ⚠️ Your responsibility
 

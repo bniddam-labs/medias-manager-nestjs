@@ -109,14 +109,14 @@ __decorate([
     __param(2, (0, common_1.Req)()),
     __param(3, (0, common_1.Res)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [get_media_dto_1.GetMediaParamsDto, get_media_dto_1.GetMediaQueryDto, Object, Object]),
+    __metadata("design:paramtypes", [get_media_dto_1.GetMediaParamsLooseDto, get_media_dto_1.GetMediaQueryDto, Object, Object]),
     __metadata("design:returntype", Promise)
 ], MediasController.prototype, "getMedia", null);
 __decorate([
     (0, common_1.Delete)('*fileName'),
     __param(0, (0, common_1.Param)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [delete_media_dto_1.DeleteMediaParamsDto]),
+    __metadata("design:paramtypes", [delete_media_dto_1.DeleteMediaParamsLooseDto]),
     __metadata("design:returntype", Promise)
 ], MediasController.prototype, "deleteMedia", null);
 exports.MediasController = MediasController = MediasController_1 = __decorate([

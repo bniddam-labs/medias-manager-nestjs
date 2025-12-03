@@ -57,6 +57,7 @@ export interface MediasModuleOptions {
     onCacheHit?: (event: CacheHitEvent) => void;
     onUploaded?: (event: FileUploadedEvent) => void;
     preGeneration?: MediasPreGenerationOptions;
+    strictFilenameValidation?: boolean;
 }
 export interface MediasModuleOptionsFactory {
     createMediasModuleOptions(): Promise<MediasModuleOptions> | MediasModuleOptions;

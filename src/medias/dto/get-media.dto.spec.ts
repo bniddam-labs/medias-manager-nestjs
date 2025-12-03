@@ -1,8 +1,9 @@
-import { GetMediaParamsDto, GetMediaQueryDto } from './get-media.dto';
+import { GetMediaParamsDto, GetMediaParamsLooseDto, GetMediaQueryDto, createGetMediaParamsSchema } from './get-media.dto';
 import { ZodValidationPipe, ZodValidationException } from 'nestjs-zod';
 import { ArgumentMetadata } from '@nestjs/common';
+import { createZodDto } from 'nestjs-zod';
 
-describe('GetMediaParamsDto', () => {
+describe('GetMediaParamsDto (strict mode - default)', () => {
   const pipe = new ZodValidationPipe();
   const metadata: ArgumentMetadata = {
     type: 'param',
@@ -10,7 +11,7 @@ describe('GetMediaParamsDto', () => {
     data: '',
   };
 
-  describe('valid file names', () => {
+  describe('valid file names in strict mode', () => {
     const validFileNames = [
       // Images
       'photo.jpg',
@@ -51,7 +52,7 @@ describe('GetMediaParamsDto', () => {
     });
   });
 
-  describe('invalid file names', () => {
+  describe('invalid file names in strict mode', () => {
     it('should reject path traversal attempts', () => {
       expect(() => pipe.transform({ fileName: '../etc/passwd.jpg' }, metadata)).toThrow(ZodValidationException);
       expect(() => pipe.transform({ fileName: 'folder/../secret.pdf' }, metadata)).toThrow(ZodValidationException);
@@ -65,10 +66,13 @@ describe('GetMediaParamsDto', () => {
       expect(() => pipe.transform({ fileName: 'file' }, metadata)).toThrow(ZodValidationException);
     });
 
-    it('should reject invalid characters', () => {
+    it('should reject special characters in strict mode', () => {
+      // These are rejected in strict mode (whitelist approach)
       expect(() => pipe.transform({ fileName: 'file name.jpg' }, metadata)).toThrow(ZodValidationException);
       expect(() => pipe.transform({ fileName: 'file@name.jpg' }, metadata)).toThrow(ZodValidationException);
       expect(() => pipe.transform({ fileName: 'file#name.jpg' }, metadata)).toThrow(ZodValidationException);
+      expect(() => pipe.transform({ fileName: "file's (copy).jpg" }, metadata)).toThrow(ZodValidationException);
+      expect(() => pipe.transform({ fileName: 'file–name.jpg' }, metadata)).toThrow(ZodValidationException); // Unicode dash
     });
 
     it('should reject empty file names', () => {
@@ -79,6 +83,93 @@ describe('GetMediaParamsDto', () => {
       const longFileName = 'a'.repeat(256) + '.jpg';
       expect(() => pipe.transform({ fileName: longFileName }, metadata)).toThrow(ZodValidationException);
     });
+  });
+});
+
+describe('GetMediaParamsLooseDto (loose mode)', () => {
+  const pipe = new ZodValidationPipe();
+  const metadata: ArgumentMetadata = {
+    type: 'param',
+    metatype: GetMediaParamsLooseDto,
+    data: '',
+  };
+
+  describe('valid file names in loose mode', () => {
+    const validFileNames = [
+      // Basic file names
+      'photo.jpg',
+      'my-file_v1.pdf',
+      'folder/photo.jpg',
+      // Special characters (allowed in loose mode)
+      'file name.jpg',
+      'file@name.jpg',
+      'file#name.jpg',
+      "file's (copy).jpg",
+      'file–name.jpg', // Unicode dash
+    ];
+
+    validFileNames.forEach((fileName) => {
+      it(`should accept "${fileName}"`, async () => {
+        const result = await pipe.transform({ fileName }, metadata);
+        expect(result.fileName).toBe(fileName);
+      });
+    });
+  });
+
+  describe('invalid file names in loose mode', () => {
+    it('should reject path traversal attempts', () => {
+      expect(() => pipe.transform({ fileName: '../etc/passwd.jpg' }, metadata)).toThrow(ZodValidationException);
+      expect(() => pipe.transform({ fileName: 'folder/../secret.pdf' }, metadata)).toThrow(ZodValidationException);
+      expect(() => pipe.transform({ fileName: '/absolute/path.mp4' }, metadata)).toThrow(ZodValidationException);
+    });
+
+    it('should reject invalid extensions', () => {
+      expect(() => pipe.transform({ fileName: 'file.exe' }, metadata)).toThrow(ZodValidationException);
+      expect(() => pipe.transform({ fileName: 'file' }, metadata)).toThrow(ZodValidationException);
+    });
+
+    it('should reject control characters', () => {
+      // Control characters are still rejected in loose mode
+      expect(() => pipe.transform({ fileName: 'file\x00name.jpg' }, metadata)).toThrow(ZodValidationException);
+      expect(() => pipe.transform({ fileName: 'file\x01name.jpg' }, metadata)).toThrow(ZodValidationException);
+      expect(() => pipe.transform({ fileName: 'file\nname.jpg' }, metadata)).toThrow(ZodValidationException);
+    });
+
+    it('should reject empty file names', () => {
+      expect(() => pipe.transform({ fileName: '' }, metadata)).toThrow(ZodValidationException);
+    });
+
+    it('should reject file names that are too long', () => {
+      const longFileName = 'a'.repeat(256) + '.jpg';
+      expect(() => pipe.transform({ fileName: longFileName }, metadata)).toThrow(ZodValidationException);
+    });
+  });
+});
+
+describe('createGetMediaParamsSchema factory', () => {
+  const pipe = new ZodValidationPipe();
+
+  it('should create strict schema by default', () => {
+    const StrictDto = createZodDto(createGetMediaParamsSchema());
+    const metadata: ArgumentMetadata = { type: 'param', metatype: StrictDto, data: '' };
+
+    expect(() => pipe.transform({ fileName: 'file name.jpg' }, metadata)).toThrow(ZodValidationException);
+    expect(() => pipe.transform({ fileName: 'valid-file.jpg' }, metadata)).not.toThrow();
+  });
+
+  it('should create strict schema when strict=true', () => {
+    const StrictDto = createZodDto(createGetMediaParamsSchema(true));
+    const metadata: ArgumentMetadata = { type: 'param', metatype: StrictDto, data: '' };
+
+    expect(() => pipe.transform({ fileName: 'file name.jpg' }, metadata)).toThrow(ZodValidationException);
+  });
+
+  it('should create loose schema when strict=false', () => {
+    const LooseDto = createZodDto(createGetMediaParamsSchema(false));
+    const metadata: ArgumentMetadata = { type: 'param', metatype: LooseDto, data: '' };
+
+    expect(() => pipe.transform({ fileName: 'file name.jpg' }, metadata)).not.toThrow();
+    expect(() => pipe.transform({ fileName: 'file\x00name.jpg' }, metadata)).toThrow(ZodValidationException);
   });
 });
 

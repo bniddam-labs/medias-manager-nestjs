@@ -14,8 +14,8 @@ export type { MediaStreamResponse, MediaBufferResponse, MediaStatResult, BatchRe
 export { MediasController } from './medias/medias.controller';
 
 // DTOs
-export { DeleteMediaParamsDto } from './medias/dto/delete-media.dto';
-export { GetMediaParamsDto, GetMediaQueryDto } from './medias/dto/get-media.dto';
+export { DeleteMediaParamsDto, DeleteMediaParamsLooseDto, createDeleteMediaParamsSchema } from './medias/dto/delete-media.dto';
+export { GetMediaParamsDto, GetMediaParamsLooseDto, GetMediaQueryDto, createGetMediaParamsSchema } from './medias/dto/get-media.dto';
 
 // Interfaces & Types
 export type { MediasModuleOptions, MediasModuleAsyncOptions, MediasModuleOptionsFactory, S3Options, MediasLogLevel, ImageResizedEvent, CacheHitEvent, FileUploadedEvent, PreGenerateJob, MediasPreGenerationOptions } from './medias/interfaces/medias-module-options.interface';
