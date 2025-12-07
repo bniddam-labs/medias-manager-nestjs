@@ -45,7 +45,7 @@
     "nestjs-minio-client": "^2.2.0",
     "nestjs-zod": "^5.0.1",
     "sharp": "^0.33.5",
-    "zod": "^3.25.76"
+    "zod": "^4.1.13"
   },
   "peerDependencies": {
     "@nestjs/common": "^10.0.0 || ^11.0.0",
