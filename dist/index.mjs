@@ -1,36 +1,10 @@
-'use strict';
-
-var common = require('@nestjs/common');
-var nestjsMinioClient = require('nestjs-minio-client');
-var sharp = require('sharp');
-var crypto = require('crypto');
-var path = require('path');
-var nestjsZod = require('nestjs-zod');
-var zod = require('zod');
-
-function _interopDefault (e) { return e && e.__esModule ? e : { default: e }; }
-
-function _interopNamespace(e) {
-  if (e && e.__esModule) return e;
-  var n = Object.create(null);
-  if (e) {
-    Object.keys(e).forEach(function (k) {
-      if (k !== 'default') {
-        var d = Object.getOwnPropertyDescriptor(e, k);
-        Object.defineProperty(n, k, d.get ? d : {
-          enumerable: true,
-          get: function () { return e[k]; }
-        });
-      }
-    });
-  }
-  n.default = e;
-  return Object.freeze(n);
-}
-
-var sharp__default = /*#__PURE__*/_interopDefault(sharp);
-var crypto__namespace = /*#__PURE__*/_interopNamespace(crypto);
-var path__namespace = /*#__PURE__*/_interopNamespace(path);
+import { Get, Param, Query, Req, Res, Delete, Controller, Injectable, Inject, Module, Logger, BadRequestException, NotFoundException, InternalServerErrorException } from '@nestjs/common';
+import { MinioModule } from 'nestjs-minio-client';
+import sharp from 'sharp';
+import * as crypto from 'crypto';
+import * as path from 'path';
+import { createZodDto } from 'nestjs-zod';
+import { z } from 'zod';
 
 var __defProp = Object.defineProperty;
 var __getOwnPropDesc = Object.getOwnPropertyDescriptor;
@@ -154,10 +128,10 @@ var S3_METADATA_KEYS = {
   ORIGINAL_NAME: "x-amz-meta-original-name",
   UPLOADED_AT: "x-amz-meta-uploaded-at"
 };
-exports.MediasController = class MediasController {
+var MediasController = class {
   constructor(mediasService) {
     this.mediasService = mediasService;
-    this.logger = new common.Logger(exports.MediasController.name);
+    this.logger = new Logger(MediasController.name);
   }
   async getMedia(params, query, req, res) {
     const startTime = Date.now();
@@ -170,9 +144,9 @@ exports.MediasController = class MediasController {
         const requestedSize = parseInt(size, 10);
         if (!this.mediasService.isResizable(fileName)) {
           if (this.mediasService.isImage(fileName)) {
-            throw new common.BadRequestException(`This image format does not support resizing. Serve without size parameter.`);
+            throw new BadRequestException(`This image format does not support resizing. Serve without size parameter.`);
           }
-          throw new common.BadRequestException(`Cannot resize non-image files. Remove the size parameter to serve the file.`);
+          throw new BadRequestException(`Cannot resize non-image files. Remove the size parameter to serve the file.`);
         }
         const format = this.mediasService.negotiateFormat(acceptHeader);
         const result = await this.mediasService.getResizedImage(fileName, requestedSize, ifNoneMatch, format);
@@ -222,11 +196,11 @@ exports.MediasController = class MediasController {
         });
       }
     } catch (error) {
-      if (error instanceof common.BadRequestException || error instanceof common.NotFoundException) {
+      if (error instanceof BadRequestException || error instanceof NotFoundException) {
         throw error;
       }
       this.logger.error(`Error serving media: ${error instanceof Error ? error.message : "Unknown error"}`);
-      throw new common.InternalServerErrorException("Error serving media");
+      throw new InternalServerErrorException("Error serving media");
     }
   }
   async deleteMedia(params) {
@@ -235,19 +209,19 @@ exports.MediasController = class MediasController {
   }
 };
 __decorateClass([
-  common.Get("*fileName"),
-  __decorateParam(0, common.Param()),
-  __decorateParam(1, common.Query()),
-  __decorateParam(2, common.Req()),
-  __decorateParam(3, common.Res())
-], exports.MediasController.prototype, "getMedia", 1);
+  Get("*fileName"),
+  __decorateParam(0, Param()),
+  __decorateParam(1, Query()),
+  __decorateParam(2, Req()),
+  __decorateParam(3, Res())
+], MediasController.prototype, "getMedia", 1);
 __decorateClass([
-  common.Delete("*fileName"),
-  __decorateParam(0, common.Param())
-], exports.MediasController.prototype, "deleteMedia", 1);
-exports.MediasController = __decorateClass([
-  common.Controller("medias")
-], exports.MediasController);
+  Delete("*fileName"),
+  __decorateParam(0, Param())
+], MediasController.prototype, "deleteMedia", 1);
+MediasController = __decorateClass([
+  Controller("medias")
+], MediasController);
 var LOG_LEVEL_PRIORITY = {
   none: -1,
   fatal: 0,
@@ -259,7 +233,7 @@ var LOG_LEVEL_PRIORITY = {
 };
 var MediasLoggerService = class {
   constructor(options) {
-    this.logger = new common.Logger("MediasModule");
+    this.logger = new Logger("MediasModule");
     this.logLevel = options.logLevel ?? "none";
   }
   shouldLog(level) {
@@ -292,8 +266,8 @@ var MediasLoggerService = class {
   }
 };
 MediasLoggerService = __decorateClass([
-  common.Injectable(),
-  __decorateParam(0, common.Inject(MEDIAS_MODULE_OPTIONS))
+  Injectable(),
+  __decorateParam(0, Inject(MEDIAS_MODULE_OPTIONS))
 ], MediasLoggerService);
 var MediasStorageService = class {
   constructor(minioService, options, logger) {
@@ -306,7 +280,7 @@ var MediasStorageService = class {
     const bucketName = this.options.s3.bucketName;
     if (!bucketName) {
       this.logger.error("S3 bucket name not configured");
-      throw new common.InternalServerErrorException("S3 bucket name not configured");
+      throw new InternalServerErrorException("S3 bucket name not configured");
     }
     return bucketName;
   }
@@ -373,7 +347,7 @@ var MediasStorageService = class {
       return fileStream;
     } catch (error) {
       this.logger.error("File not found in S3", { fileName, error: error instanceof Error ? error.message : "Unknown error" });
-      throw new common.NotFoundException(`File with name ${fileName} not found`);
+      throw new NotFoundException(`File with name ${fileName} not found`);
     }
   }
   async getFile(fileName) {
@@ -396,11 +370,11 @@ var MediasStorageService = class {
         });
       });
     } catch (error) {
-      if (error instanceof common.NotFoundException) {
+      if (error instanceof NotFoundException) {
         throw error;
       }
       this.logger.error("Failed to get file", { fileName, error: error instanceof Error ? error.message : "Unknown error" });
-      throw new common.NotFoundException(`File with name ${fileName} not found`);
+      throw new NotFoundException(`File with name ${fileName} not found`);
     }
   }
   async getFileStat(fileName) {
@@ -411,7 +385,7 @@ var MediasStorageService = class {
       return stat;
     } catch (error) {
       this.logger.error("File stat not found", { fileName, error: error instanceof Error ? error.message : "Unknown error" });
-      throw new common.NotFoundException(`File with name ${fileName} not found`);
+      throw new NotFoundException(`File with name ${fileName} not found`);
     }
   }
   async putFile(fileName, file, metadata) {
@@ -429,8 +403,8 @@ var MediasStorageService = class {
   }
 };
 MediasStorageService = __decorateClass([
-  common.Injectable(),
-  __decorateParam(1, common.Inject(MEDIAS_MODULE_OPTIONS))
+  Injectable(),
+  __decorateParam(1, Inject(MEDIAS_MODULE_OPTIONS))
 ], MediasStorageService);
 var MediasValidationService = class {
   constructor(options, logger) {
@@ -444,14 +418,14 @@ var MediasValidationService = class {
    * Check if file is an image based on extension
    */
   isImage(fileName) {
-    const ext = path__namespace.extname(fileName).toLowerCase();
+    const ext = path.extname(fileName).toLowerCase();
     return IMAGE_EXTENSIONS.includes(ext);
   }
   /**
    * Check if file can be resized (Sharp-compatible image)
    */
   isResizable(fileName) {
-    const ext = path__namespace.extname(fileName).toLowerCase();
+    const ext = path.extname(fileName).toLowerCase();
     return RESIZABLE_IMAGE_EXTENSIONS.includes(ext);
   }
   /**
@@ -469,13 +443,13 @@ var MediasValidationService = class {
    */
   validateResizable(fileName) {
     if (!this.isResizable(fileName)) {
-      const ext = path__namespace.extname(fileName).toLowerCase();
+      const ext = path.extname(fileName).toLowerCase();
       if (this.isImage(fileName)) {
         this.logger.warn("Attempted to resize unsupported image format", { fileName, ext });
-        throw new common.BadRequestException(`Image format ${ext} does not support resizing. Supported formats: ${RESIZABLE_IMAGE_EXTENSIONS.join(", ")}`);
+        throw new BadRequestException(`Image format ${ext} does not support resizing. Supported formats: ${RESIZABLE_IMAGE_EXTENSIONS.join(", ")}`);
       }
       this.logger.warn("Attempted to resize non-image file", { fileName });
-      throw new common.BadRequestException(`Cannot resize non-image file ${fileName}. Resize is only supported for images.`);
+      throw new BadRequestException(`Cannot resize non-image file ${fileName}. Resize is only supported for images.`);
     }
   }
   /**
@@ -486,7 +460,7 @@ var MediasValidationService = class {
     const maxWidth = this.options.maxResizeWidth ?? DEFAULT_MAX_RESIZE_WIDTH;
     if (size > maxWidth) {
       this.logger.warn("Resize size exceeds maximum", { fileName, size, maxWidth });
-      throw new common.BadRequestException(`Size cannot exceed ${maxWidth} pixels`);
+      throw new BadRequestException(`Size cannot exceed ${maxWidth} pixels`);
     }
   }
   // ============================================
@@ -496,14 +470,14 @@ var MediasValidationService = class {
    * Generate ETag from file metadata
    */
   generateETag(fileName, lastModified, size) {
-    const hash = crypto__namespace.createHash("md5").update(`${fileName}-${lastModified.getTime()}-${size}`).digest("hex");
+    const hash = crypto.createHash("md5").update(`${fileName}-${lastModified.getTime()}-${size}`).digest("hex");
     return `"${hash}"`;
   }
   /**
    * Generate ETag from buffer content
    */
   generateETagFromBuffer(buffer) {
-    const hash = crypto__namespace.createHash("md5").update(buffer).digest("hex");
+    const hash = crypto.createHash("md5").update(buffer).digest("hex");
     return `"${hash}"`;
   }
   // ============================================
@@ -513,16 +487,16 @@ var MediasValidationService = class {
    * Build resized file name from original
    */
   buildResizedFileName(fileName, size, outputExt) {
-    const ext = path__namespace.extname(fileName);
-    const baseName = path__namespace.basename(fileName, ext);
-    const dirName = path__namespace.dirname(fileName);
+    const ext = path.extname(fileName);
+    const baseName = path.basename(fileName, ext);
+    const dirName = path.dirname(fileName);
     return dirName === "." ? `${baseName}-${size}${outputExt}` : `${dirName}/${baseName}-${size}${outputExt}`;
   }
   /**
    * Get file extension
    */
   getExtension(fileName) {
-    return path__namespace.extname(fileName);
+    return path.extname(fileName);
   }
   /**
    * Get max resize width from options
@@ -538,8 +512,8 @@ var MediasValidationService = class {
   }
 };
 MediasValidationService = __decorateClass([
-  common.Injectable(),
-  __decorateParam(0, common.Inject(MEDIAS_MODULE_OPTIONS))
+  Injectable(),
+  __decorateParam(0, Inject(MEDIAS_MODULE_OPTIONS))
 ], MediasValidationService);
 var MediasResizeService = class {
   constructor(options, logger, storage, validation) {
@@ -657,7 +631,7 @@ var MediasResizeService = class {
         finalSize,
         resizedFileName
       });
-      let pipeline = sharp__default.default(buffer).resize(finalSize);
+      let pipeline = sharp(buffer).resize(finalSize);
       pipeline = this.applyFormat(pipeline, outputFormat);
       const resizedBuffer = await pipeline.toBuffer();
       if (!skipUpload) {
@@ -700,7 +674,7 @@ var MediasResizeService = class {
         size: stat.size,
         maxOriginalSize
       });
-      throw new common.BadRequestException(
+      throw new BadRequestException(
         `Image too large to resize on-the-fly (${Math.round(stat.size / SIZE_UNITS.MEGABYTE)}MB). Maximum allowed: ${Math.round(maxOriginalSize / SIZE_UNITS.MEGABYTE)}MB.`
       );
     }
@@ -742,7 +716,7 @@ var MediasResizeService = class {
     const autoPreventUpscale = this.validation.isAutoPreventUpscaleEnabled();
     let finalSize = size;
     if (autoPreventUpscale) {
-      const metadata = await sharp__default.default(originalFile).metadata();
+      const metadata = await sharp(originalFile).metadata();
       if (metadata.width && size > metadata.width) {
         this.logger.debug("Requested size exceeds original width, preventing upscale", {
           fileName,
@@ -753,7 +727,7 @@ var MediasResizeService = class {
       }
     }
     this.logger.verbose("Resizing image with Sharp", { fileName, targetWidth: finalSize, outputFormat });
-    let pipeline = sharp__default.default(originalFile).resize(finalSize);
+    let pipeline = sharp(originalFile).resize(finalSize);
     pipeline = this.applyFormat(pipeline, outputFormat);
     const resizedBuffer = await pipeline.toBuffer();
     const etag = this.validation.generateETagFromBuffer(resizedBuffer);
@@ -805,7 +779,7 @@ var MediasResizeService = class {
     this.logger.verbose("Fetching original image stream for resize", { fileName });
     const originalStream = await this.storage.getFileStream(fileName);
     this.logger.verbose("Creating streaming resize pipeline", { fileName, size, outputFormat });
-    let resizePipeline = sharp__default.default().resize(size);
+    let resizePipeline = sharp().resize(size);
     resizePipeline = this.applyFormat(resizePipeline, outputFormat);
     const resizedStream = originalStream.pipe(resizePipeline);
     const mimeType = this.getMimeTypeForFormat(outputFormat, this.validation.getExtension(fileName));
@@ -832,7 +806,7 @@ var MediasResizeService = class {
     }
     let originalWidth;
     try {
-      const metadata = await sharp__default.default(buffer).metadata();
+      const metadata = await sharp(buffer).metadata();
       originalWidth = metadata.width;
       this.logger.debug("Original image metadata for pre-generation", {
         fileName,
@@ -898,7 +872,7 @@ var MediasResizeService = class {
       }
       let originalWidth;
       try {
-        const metadata = await sharp__default.default(buffer).metadata();
+        const metadata = await sharp(buffer).metadata();
         originalWidth = metadata.width;
         this.logger.debug("Original image metadata for batch resize", {
           fileName,
@@ -934,12 +908,12 @@ var MediasResizeService = class {
   }
 };
 MediasResizeService = __decorateClass([
-  common.Injectable(),
-  __decorateParam(0, common.Inject(MEDIAS_MODULE_OPTIONS))
+  Injectable(),
+  __decorateParam(0, Inject(MEDIAS_MODULE_OPTIONS))
 ], MediasResizeService);
 
 // src/medias/medias.service.ts
-exports.MediasService = class MediasService {
+var MediasService = class {
   constructor(options, logger, storage, validation, resize) {
     this.options = options;
     this.logger = logger;
@@ -1053,7 +1027,7 @@ exports.MediasService = class MediasService {
     this.logger.verbose("Uploading file to S3", { fileName, size: file.length, originalName, skipPreGeneration });
     if (this.validation.isImage(fileName)) {
       try {
-        const metadata = await sharp__default.default(file).metadata();
+        const metadata = await sharp(file).metadata();
         const ext = this.validation.getExtension(fileName);
         const mimeType = this.validation.getMimeType(ext);
         const s3Metadata = {
@@ -1168,7 +1142,7 @@ exports.MediasService = class MediasService {
     this.logger.verbose("getImageStream called", { fileName });
     if (!this.validation.isImage(fileName)) {
       this.logger.warn("Attempted to get non-image file as image", { fileName });
-      throw new common.BadRequestException(`File ${fileName} is not an image. Use getMediaStream() for non-image files.`);
+      throw new BadRequestException(`File ${fileName} is not an image. Use getMediaStream() for non-image files.`);
     }
     return this.getMediaStream(fileName, ifNoneMatch);
   }
@@ -1191,24 +1165,24 @@ exports.MediasService = class MediasService {
     return this.resize.batchResize(items);
   }
 };
-exports.MediasService = __decorateClass([
-  common.Injectable(),
-  __decorateParam(0, common.Inject(MEDIAS_MODULE_OPTIONS))
-], exports.MediasService);
+MediasService = __decorateClass([
+  Injectable(),
+  __decorateParam(0, Inject(MEDIAS_MODULE_OPTIONS))
+], MediasService);
 
 // src/medias/medias.module.ts
 var INTERNAL_SERVICES = [MediasLoggerService, MediasStorageService, MediasValidationService, MediasResizeService];
-exports.MediasModule = class MediasModule {
+var MediasModule = class {
   /**
    * Register the medias module synchronously with provided options
    * @param options Configuration options for the medias module
    */
   static forRoot(options) {
-    const controllers = options.registerController ? [exports.MediasController] : [];
+    const controllers = options.registerController ? [MediasController] : [];
     return {
-      module: exports.MediasModule,
+      module: MediasModule,
       imports: [
-        nestjsMinioClient.MinioModule.register({
+        MinioModule.register({
           ...options.s3
         })
       ],
@@ -1219,9 +1193,9 @@ exports.MediasModule = class MediasModule {
           useValue: options
         },
         ...INTERNAL_SERVICES,
-        exports.MediasService
+        MediasService
       ],
-      exports: [exports.MediasService]
+      exports: [MediasService]
     };
   }
   /**
@@ -1229,12 +1203,12 @@ exports.MediasModule = class MediasModule {
    * @param options Async configuration options
    */
   static forRootAsync(options) {
-    const controllers = options.registerController ? [exports.MediasController] : [];
+    const controllers = options.registerController ? [MediasController] : [];
     return {
-      module: exports.MediasModule,
+      module: MediasModule,
       imports: [
         ...options.imports || [],
-        nestjsMinioClient.MinioModule.registerAsync({
+        MinioModule.registerAsync({
           useFactory: async (...args) => {
             const moduleOptions = await this.createModuleOptions(options, ...args);
             return moduleOptions.s3;
@@ -1243,8 +1217,8 @@ exports.MediasModule = class MediasModule {
         })
       ],
       controllers,
-      providers: [...this.createAsyncProviders(options), ...INTERNAL_SERVICES, exports.MediasService],
-      exports: [exports.MediasService]
+      providers: [...this.createAsyncProviders(options), ...INTERNAL_SERVICES, MediasService],
+      exports: [MediasService]
     };
   }
   static createAsyncProviders(options) {
@@ -1297,9 +1271,9 @@ exports.MediasModule = class MediasModule {
     throw new Error("Invalid MediasModule configuration");
   }
 };
-exports.MediasModule = __decorateClass([
-  common.Module({})
-], exports.MediasModule);
+MediasModule = __decorateClass([
+  Module({})
+], MediasModule);
 var commonFileNameRefinements = (schema) => schema.min(1, "File name is required").max(MAX_FILENAME_LENGTH, "File name is too long").refine(
   (val) => {
     const sanitized = val.replace(/\\/g, "/");
@@ -1319,16 +1293,16 @@ var commonFileNameRefinements = (schema) => schema.min(1, "File name is required
 );
 var strictFilenameRefinement = (val) => /^[a-zA-Z0-9._/-]+$/.test(val);
 var looseFilenameRefinement = (val) => !/[\x00-\x1F]/.test(val);
-var createDeleteMediaParamsSchema = (strict = true) => zod.z.object({
-  fileName: commonFileNameRefinements(zod.z.string()).refine(strict ? strictFilenameRefinement : looseFilenameRefinement, {
+var createDeleteMediaParamsSchema = (strict = true) => z.object({
+  fileName: commonFileNameRefinements(z.string()).refine(strict ? strictFilenameRefinement : looseFilenameRefinement, {
     message: strict ? "File name contains invalid characters - only alphanumeric, dots, hyphens, underscores, and slashes are allowed" : "File name contains invalid control characters"
   })
 });
 var DeleteMediaParamsSchema = createDeleteMediaParamsSchema(true);
 var DeleteMediaParamsLooseSchema = createDeleteMediaParamsSchema(false);
-var DeleteMediaParamsDto = class extends nestjsZod.createZodDto(DeleteMediaParamsSchema) {
+var DeleteMediaParamsDto = class extends createZodDto(DeleteMediaParamsSchema) {
 };
-var DeleteMediaParamsLooseDto = class extends nestjsZod.createZodDto(DeleteMediaParamsLooseSchema) {
+var DeleteMediaParamsLooseDto = class extends createZodDto(DeleteMediaParamsLooseSchema) {
 };
 var commonFileNameRefinements2 = (schema) => schema.min(1, "File name is required").max(MAX_FILENAME_LENGTH, "File name is too long").refine(
   (val) => {
@@ -1349,15 +1323,15 @@ var commonFileNameRefinements2 = (schema) => schema.min(1, "File name is require
 );
 var strictFilenameRefinement2 = (val) => /^[a-zA-Z0-9._/-]+$/.test(val);
 var looseFilenameRefinement2 = (val) => !/[\x00-\x1F]/.test(val);
-var createGetMediaParamsSchema = (strict = true) => zod.z.object({
-  fileName: commonFileNameRefinements2(zod.z.string()).refine(strict ? strictFilenameRefinement2 : looseFilenameRefinement2, {
+var createGetMediaParamsSchema = (strict = true) => z.object({
+  fileName: commonFileNameRefinements2(z.string()).refine(strict ? strictFilenameRefinement2 : looseFilenameRefinement2, {
     message: strict ? "File name contains invalid characters - only alphanumeric, dots, hyphens, underscores, and slashes are allowed" : "File name contains invalid control characters"
   })
 });
 var GetMediaParamsSchema = createGetMediaParamsSchema(true);
 var GetMediaParamsLooseSchema = createGetMediaParamsSchema(false);
-var GetMediaQuerySchema = zod.z.object({
-  size: zod.z.string().optional().refine(
+var GetMediaQuerySchema = z.object({
+  size: z.string().optional().refine(
     (val) => {
       if (!val) return true;
       const num = parseInt(val, 10);
@@ -1368,39 +1342,13 @@ var GetMediaQuerySchema = zod.z.object({
     }
   )
 });
-var GetMediaParamsDto = class extends nestjsZod.createZodDto(GetMediaParamsSchema) {
+var GetMediaParamsDto = class extends createZodDto(GetMediaParamsSchema) {
 };
-var GetMediaParamsLooseDto = class extends nestjsZod.createZodDto(GetMediaParamsLooseSchema) {
+var GetMediaParamsLooseDto = class extends createZodDto(GetMediaParamsLooseSchema) {
 };
-var GetMediaQueryDto = class extends nestjsZod.createZodDto(GetMediaQuerySchema) {
+var GetMediaQueryDto = class extends createZodDto(GetMediaQuerySchema) {
 };
 
-exports.ALL_MEDIA_EXTENSIONS = ALL_MEDIA_EXTENSIONS;
-exports.ARCHIVE_EXTENSIONS = ARCHIVE_EXTENSIONS;
-exports.AUDIO_EXTENSIONS = AUDIO_EXTENSIONS;
-exports.DEFAULT_MAX_ORIGINAL_FILE_SIZE = DEFAULT_MAX_ORIGINAL_FILE_SIZE;
-exports.DEFAULT_MAX_RESIZE_WIDTH = DEFAULT_MAX_RESIZE_WIDTH;
-exports.DOCUMENT_EXTENSIONS = DOCUMENT_EXTENSIONS;
-exports.DeleteMediaParamsDto = DeleteMediaParamsDto;
-exports.DeleteMediaParamsLooseDto = DeleteMediaParamsLooseDto;
-exports.FORMAT_PRIORITY = FORMAT_PRIORITY;
-exports.GetMediaParamsDto = GetMediaParamsDto;
-exports.GetMediaParamsLooseDto = GetMediaParamsLooseDto;
-exports.GetMediaQueryDto = GetMediaQueryDto;
-exports.HTTP_STATUS = HTTP_STATUS;
-exports.IMAGE_EXTENSIONS = IMAGE_EXTENSIONS;
-exports.IMAGE_QUALITY = IMAGE_QUALITY;
-exports.MAX_FILENAME_LENGTH = MAX_FILENAME_LENGTH;
-exports.MAX_RESIZE_WIDTH_LIMIT = MAX_RESIZE_WIDTH_LIMIT;
-exports.MEDIAS_MODULE_OPTIONS = MEDIAS_MODULE_OPTIONS;
-exports.MIME_TYPES = MIME_TYPES;
-exports.RESIZABLE_IMAGE_EXTENSIONS = RESIZABLE_IMAGE_EXTENSIONS;
-exports.RETRY_CONFIG = RETRY_CONFIG;
-exports.S3_METADATA_KEYS = S3_METADATA_KEYS;
-exports.SIZE_UNITS = SIZE_UNITS;
-exports.TRANSIENT_S3_ERROR_CODES = TRANSIENT_S3_ERROR_CODES;
-exports.VIDEO_EXTENSIONS = VIDEO_EXTENSIONS;
-exports.createDeleteMediaParamsSchema = createDeleteMediaParamsSchema;
-exports.createGetMediaParamsSchema = createGetMediaParamsSchema;
-//# sourceMappingURL=index.js.map
-//# sourceMappingURL=index.js.map
+export { ALL_MEDIA_EXTENSIONS, ARCHIVE_EXTENSIONS, AUDIO_EXTENSIONS, DEFAULT_MAX_ORIGINAL_FILE_SIZE, DEFAULT_MAX_RESIZE_WIDTH, DOCUMENT_EXTENSIONS, DeleteMediaParamsDto, DeleteMediaParamsLooseDto, FORMAT_PRIORITY, GetMediaParamsDto, GetMediaParamsLooseDto, GetMediaQueryDto, HTTP_STATUS, IMAGE_EXTENSIONS, IMAGE_QUALITY, MAX_FILENAME_LENGTH, MAX_RESIZE_WIDTH_LIMIT, MEDIAS_MODULE_OPTIONS, MIME_TYPES, MediasController, MediasModule, MediasService, RESIZABLE_IMAGE_EXTENSIONS, RETRY_CONFIG, S3_METADATA_KEYS, SIZE_UNITS, TRANSIENT_S3_ERROR_CODES, VIDEO_EXTENSIONS, createDeleteMediaParamsSchema, createGetMediaParamsSchema };
+//# sourceMappingURL=index.mjs.map
+//# sourceMappingURL=index.mjs.map

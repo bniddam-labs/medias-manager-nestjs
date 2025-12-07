@@ -1,8 +1,8 @@
 import { BadRequestException, Inject, Injectable } from '@nestjs/common';
 import sharp from 'sharp';
 import { Readable } from 'stream';
-import { ImageFormat, MEDIAS_MODULE_OPTIONS, S3_METADATA_KEYS } from './medias.constants';
-import { MediasModuleOptions } from './interfaces/medias-module-options.interface';
+import { ImageFormat, MEDIAS_MODULE_OPTIONS, S3_METADATA_KEYS } from './medias.constants.js';
+import { MediasModuleOptions } from './interfaces/medias-module-options.interface.js';
 import {
   MediasLoggerService,
   MediasStorageService,
@@ -13,7 +13,7 @@ import {
   MediaStreamResponse,
   BatchResizeRequestItem,
   BatchResizeResultItem,
-} from './services';
+} from './services/index.js';
 
 // Re-export types for backward compatibility
 export { MediaStatResult, MediaBufferResponse, MediaStreamResponse, BatchResizeRequestItem, BatchResizeResultItem };

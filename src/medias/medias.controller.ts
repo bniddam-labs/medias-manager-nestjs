@@ -1,9 +1,9 @@
 import { BadRequestException, Controller, Delete, Get, InternalServerErrorException, Logger, NotFoundException, Param, Query, Req, Res } from '@nestjs/common';
 import { Request, Response } from 'express';
-import { DeleteMediaParamsLooseDto } from './dto/delete-media.dto';
-import { GetMediaParamsLooseDto, GetMediaQueryDto } from './dto/get-media.dto';
-import { HTTP_STATUS } from './medias.constants';
-import { MediasService } from './medias.service';
+import { DeleteMediaParamsLooseDto } from './dto/delete-media.dto.js';
+import { GetMediaParamsLooseDto, GetMediaQueryDto } from './dto/get-media.dto.js';
+import { HTTP_STATUS } from './medias.constants.js';
+import { MediasService } from './medias.service.js';
 
 @Controller('medias')
 export class MediasController {

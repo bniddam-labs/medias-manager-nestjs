@@ -1,6 +1,6 @@
 import { createZodDto } from 'nestjs-zod';
 import { z } from 'zod';
-import { ALL_MEDIA_EXTENSIONS, MAX_FILENAME_LENGTH } from '../medias.constants';
+import { ALL_MEDIA_EXTENSIONS, MAX_FILENAME_LENGTH } from '../medias.constants.js';
 
 /**
  * Common validation refinements for file names (security-critical, always applied)

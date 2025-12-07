@@ -2,7 +2,7 @@
 /node_modules
 /build
 *.tsbuildinfo
-# /dist
+# dist/ - Committed for GitHub installs
 
 # Logs
 logs
