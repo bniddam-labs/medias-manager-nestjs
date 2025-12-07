@@ -1,9 +1,9 @@
 import { Inject, Injectable, InternalServerErrorException, NotFoundException } from '@nestjs/common';
 import { MinioService } from 'nestjs-minio-client';
 import { Readable } from 'stream';
-import { MEDIAS_MODULE_OPTIONS, RETRY_CONFIG, TRANSIENT_S3_ERROR_CODES } from '../medias.constants.js';
-import { MediasModuleOptions } from '../interfaces/medias-module-options.interface.js';
-import { MediasLoggerService } from './medias-logger.service.js';
+import { MEDIAS_MODULE_OPTIONS, RETRY_CONFIG, TRANSIENT_S3_ERROR_CODES } from '../medias.constants';
+import { MediasModuleOptions } from '../interfaces/medias-module-options.interface';
+import { MediasLoggerService } from './medias-logger.service';
 
 /**
  * File stat information

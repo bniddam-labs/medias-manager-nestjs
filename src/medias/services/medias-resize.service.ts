@@ -1,11 +1,11 @@
 import { BadRequestException, Inject, Injectable } from '@nestjs/common';
 import sharp, { Sharp } from 'sharp';
 import { Readable } from 'stream';
-import { DEFAULT_MAX_ORIGINAL_FILE_SIZE, IMAGE_QUALITY, ImageFormat, MEDIAS_MODULE_OPTIONS, SIZE_UNITS } from '../medias.constants.js';
-import { MediasModuleOptions } from '../interfaces/medias-module-options.interface.js';
-import { MediasLoggerService } from './medias-logger.service.js';
-import { MediasStorageService } from './medias-storage.service.js';
-import { MediasValidationService } from './medias-validation.service.js';
+import { DEFAULT_MAX_ORIGINAL_FILE_SIZE, IMAGE_QUALITY, ImageFormat, MEDIAS_MODULE_OPTIONS, SIZE_UNITS } from '../medias.constants';
+import { MediasModuleOptions } from '../interfaces/medias-module-options.interface';
+import { MediasLoggerService } from './medias-logger.service';
+import { MediasStorageService } from './medias-storage.service';
+import { MediasValidationService } from './medias-validation.service';
 
 /**
  * Response type for buffered media

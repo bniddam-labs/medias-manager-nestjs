@@ -1,9 +1,9 @@
 import { BadRequestException, Inject, Injectable } from '@nestjs/common';
 import * as crypto from 'crypto';
 import * as path from 'path';
-import { DEFAULT_MAX_RESIZE_WIDTH, IMAGE_EXTENSIONS, MIME_TYPES, RESIZABLE_IMAGE_EXTENSIONS, MEDIAS_MODULE_OPTIONS } from '../medias.constants.js';
-import { MediasModuleOptions } from '../interfaces/medias-module-options.interface.js';
-import { MediasLoggerService } from './medias-logger.service.js';
+import { DEFAULT_MAX_RESIZE_WIDTH, IMAGE_EXTENSIONS, MIME_TYPES, RESIZABLE_IMAGE_EXTENSIONS, MEDIAS_MODULE_OPTIONS } from '../medias.constants';
+import { MediasModuleOptions } from '../interfaces/medias-module-options.interface';
+import { MediasLoggerService } from './medias-logger.service';
 
 /**
  * Internal validation service for the medias module

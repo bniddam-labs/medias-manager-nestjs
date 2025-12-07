@@ -1,6 +1,6 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
-import { MEDIAS_MODULE_OPTIONS } from '../medias.constants.js';
-import { MediasLogLevel, MediasModuleOptions } from '../interfaces/medias-module-options.interface.js';
+import { MEDIAS_MODULE_OPTIONS } from '../medias.constants';
+import { MediasLogLevel, MediasModuleOptions } from '../interfaces/medias-module-options.interface';
 
 // Log level priority for comparison
 const LOG_LEVEL_PRIORITY: Record<MediasLogLevel, number> = {
