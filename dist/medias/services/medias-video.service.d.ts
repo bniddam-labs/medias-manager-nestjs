@@ -14,8 +14,11 @@ export declare class MediasVideoService implements OnModuleInit {
     private checkFfmpegAvailability;
     isFfmpegAvailable(): boolean;
     parseTimestamp(timestamp: number | string | undefined, videoDuration: number): number;
+    private writeTempFile;
+    private cleanupTempFile;
     getVideoDuration(videoBuffer: Buffer): Promise<number>;
     extractFrame(videoBuffer: Buffer, timestampSeconds: number): Promise<Buffer>;
+    private extractFrameAtTimestamp;
     private applyFormat;
     private getExtensionForFormat;
     generateThumbnailsInline(fileName: string, videoBuffer: Buffer, sizes: number[], thumbnailTimestamp?: number | string): Promise<void>;
