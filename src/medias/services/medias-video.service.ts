@@ -1,4 +1,6 @@
-import { Readable } from 'node:stream';
+import * as fs from 'node:fs';
+import * as os from 'node:os';
+import * as path from 'node:path';
 import { Inject, Injectable, OnModuleInit } from '@nestjs/common';
 import ffmpeg from 'fluent-ffmpeg';
 import sharp from 'sharp';
@@ -88,11 +90,26 @@ export class MediasVideoService implements OnModuleInit {
   // Video Duration Probing
   // ============================================
 
-  getVideoDuration(videoBuffer: Buffer): Promise<number> {
-    return new Promise((resolve, reject) => {
-      const inputStream = Readable.from(videoBuffer);
+  private writeTempFile(videoBuffer: Buffer): string {
+    const tempPath = path.join(os.tmpdir(), `medias-thumb-${Date.now()}-${Math.random().toString(36).slice(2)}.tmp`);
+    fs.writeFileSync(tempPath, videoBuffer);
+    return tempPath;
+  }
 
-      ffmpeg.ffprobe(inputStream as unknown as string, (err, metadata) => {
+  private cleanupTempFile(tempPath: string): void {
+    try {
+      fs.unlinkSync(tempPath);
+    } catch {
+      this.logger.warn('Failed to cleanup temp file', { tempPath });
+    }
+  }
+
+  getVideoDuration(videoBuffer: Buffer): Promise<number> {
+    const tempPath = this.writeTempFile(videoBuffer);
+
+    return new Promise<number>((resolve, reject) => {
+      ffmpeg.ffprobe(tempPath, (err, metadata) => {
+        this.cleanupTempFile(tempPath);
         if (err) {
           reject(err);
           return;
@@ -107,12 +124,25 @@ export class MediasVideoService implements OnModuleInit {
   // ============================================
 
   extractFrame(videoBuffer: Buffer, timestampSeconds: number): Promise<Buffer> {
+    const tempPath = this.writeTempFile(videoBuffer);
+
+    return this.extractFrameAtTimestamp(tempPath, timestampSeconds).catch((error) => {
+      this.logger.warn('Frame extraction failed at requested timestamp, retrying at 0s', {
+        timestamp: timestampSeconds,
+        error: error instanceof Error ? error.message : 'Unknown error',
+      });
+      return this.extractFrameAtTimestamp(tempPath, 0);
+    }).finally(() => {
+      this.cleanupTempFile(tempPath);
+    });
+  }
+
+  private extractFrameAtTimestamp(filePath: string, timestampSeconds: number): Promise<Buffer> {
     return new Promise((resolve, reject) => {
-      const inputStream = Readable.from(videoBuffer);
       const chunks: Buffer[] = [];
 
-      ffmpeg(inputStream)
-        .seekInput(timestampSeconds)
+      ffmpeg(filePath)
+        .inputOptions([`-ss ${timestampSeconds}`])
         .outputOptions([`-frames:v ${FFMPEG_FRAME_COUNT}`, '-f image2pipe', '-vcodec png'])
         .format('image2pipe')
         .on('error', (err) => {
