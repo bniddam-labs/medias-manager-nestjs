@@ -12,9 +12,7 @@ declare const DeleteMediaParamsDto_base: import("nestjs-zod").ZodDto<z.ZodObject
     fileName: string;
 }, {
     fileName: string;
-}>> & {
-    io: "input";
-};
+}>, false>;
 export declare class DeleteMediaParamsDto extends DeleteMediaParamsDto_base {
 }
 declare const DeleteMediaParamsLooseDto_base: import("nestjs-zod").ZodDto<z.ZodObject<{
@@ -23,9 +21,7 @@ declare const DeleteMediaParamsLooseDto_base: import("nestjs-zod").ZodDto<z.ZodO
     fileName: string;
 }, {
     fileName: string;
-}>> & {
-    io: "input";
-};
+}>, false>;
 export declare class DeleteMediaParamsLooseDto extends DeleteMediaParamsLooseDto_base {
 }
 export {};

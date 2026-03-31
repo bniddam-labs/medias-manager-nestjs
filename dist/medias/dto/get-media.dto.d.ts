@@ -12,9 +12,7 @@ declare const GetMediaParamsDto_base: import("nestjs-zod").ZodDto<z.ZodObject<{
     fileName: string;
 }, {
     fileName: string;
-}>> & {
-    io: "input";
-};
+}>, false>;
 export declare class GetMediaParamsDto extends GetMediaParamsDto_base {
 }
 declare const GetMediaParamsLooseDto_base: import("nestjs-zod").ZodDto<z.ZodObject<{
@@ -23,9 +21,7 @@ declare const GetMediaParamsLooseDto_base: import("nestjs-zod").ZodDto<z.ZodObje
     fileName: string;
 }, {
     fileName: string;
-}>> & {
-    io: "input";
-};
+}>, false>;
 export declare class GetMediaParamsLooseDto extends GetMediaParamsLooseDto_base {
 }
 declare const GetMediaQueryDto_base: import("nestjs-zod").ZodDto<z.ZodObject<{
@@ -34,9 +30,7 @@ declare const GetMediaQueryDto_base: import("nestjs-zod").ZodDto<z.ZodObject<{
     size?: string | undefined;
 }, {
     size?: string | undefined;
-}>> & {
-    io: "input";
-};
+}>, false>;
 export declare class GetMediaQueryDto extends GetMediaQueryDto_base {
 }
 export {};
