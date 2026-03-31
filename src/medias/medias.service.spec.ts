@@ -4,7 +4,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { MinioService } from 'nestjs-minio-client';
 import { MEDIAS_MODULE_OPTIONS } from './medias.constants';
 import { MediasService } from './medias.service';
-import { MediasLoggerService, MediasResizeService, MediasStorageService, MediasValidationService } from './services';
+import { MediasLoggerService, MediasResizeService, MediasStorageService, MediasValidationService, MediasVideoService } from './services';
 
 // Mock sharp module
 jest.mock('sharp', () => {
@@ -17,6 +17,22 @@ jest.mock('sharp', () => {
       format: 'jpeg',
     }),
   }));
+});
+
+// Mock fluent-ffmpeg module
+jest.mock('fluent-ffmpeg', () => {
+  const ffmpegFn: any = jest.fn().mockReturnValue({
+    seekInput: jest.fn().mockReturnThis(),
+    outputOptions: jest.fn().mockReturnThis(),
+    format: jest.fn().mockReturnThis(),
+    on: jest.fn().mockReturnThis(),
+    pipe: jest.fn().mockReturnValue({ on: jest.fn().mockReturnThis() }),
+  });
+  ffmpegFn.ffprobe = jest.fn();
+  ffmpegFn.getAvailableFormats = jest.fn().mockImplementation((cb: (err: Error | null, formats?: any) => void) => {
+    cb(null, { mp4: {} });
+  });
+  return { __esModule: true, default: ffmpegFn };
 });
 
 describe('MediasService', () => {
@@ -50,6 +66,7 @@ describe('MediasService', () => {
         MediasStorageService,
         MediasValidationService,
         MediasResizeService,
+        MediasVideoService,
         {
           provide: MinioService,
           useValue: {
@@ -107,6 +124,22 @@ describe('MediasService', () => {
       expect(service.isResizable('video.mp4')).toBe(false);
       expect(service.isResizable('audio.mp3')).toBe(false);
       expect(service.isResizable('document.pdf')).toBe(false);
+    });
+  });
+
+  describe('isVideo', () => {
+    it('should return true for video files', () => {
+      expect(service.isVideo('video.mp4')).toBe(true);
+      expect(service.isVideo('video.webm')).toBe(true);
+      expect(service.isVideo('video.mov')).toBe(true);
+      expect(service.isVideo('video.avi')).toBe(true);
+      expect(service.isVideo('video.mkv')).toBe(true);
+    });
+
+    it('should return false for non-video files', () => {
+      expect(service.isVideo('photo.jpg')).toBe(false);
+      expect(service.isVideo('audio.mp3')).toBe(false);
+      expect(service.isVideo('document.pdf')).toBe(false);
     });
   });
 
@@ -337,6 +370,7 @@ describe('MediasService', () => {
           MediasStorageService,
           MediasValidationService,
           MediasResizeService,
+          MediasVideoService,
           {
             provide: MinioService,
             useValue: {
@@ -411,6 +445,118 @@ describe('MediasService', () => {
       await service.uploadMedia('test.pdf', Buffer.from('content'));
 
       expect(mockMinioClient.putObject).toHaveBeenCalledWith('test-bucket', 'test.pdf', Buffer.from('content'));
+    });
+
+    it('should trigger video thumbnail generation when videoThumbnails configured', async () => {
+      const dispatchJob = jest.fn().mockResolvedValue(undefined);
+
+      const moduleWithThumbs: TestingModule = await Test.createTestingModule({
+        providers: [
+          MediasService,
+          MediasLoggerService,
+          MediasStorageService,
+          MediasValidationService,
+          MediasResizeService,
+          MediasVideoService,
+          {
+            provide: MinioService,
+            useValue: { client: mockMinioClient },
+          },
+          {
+            provide: MEDIAS_MODULE_OPTIONS,
+            useValue: {
+              ...mockOptions,
+              videoThumbnails: {
+                sizes: [200, 400],
+                dispatchJob,
+              },
+            },
+          },
+        ],
+      }).compile();
+
+      const serviceWithThumbs = moduleWithThumbs.get<MediasService>(MediasService);
+      mockMinioClient.putObject.mockResolvedValue({});
+
+      await serviceWithThumbs.uploadMedia('clip.mp4', Buffer.from('video content'));
+
+      expect(dispatchJob).toHaveBeenCalledWith({
+        fileName: 'clip.mp4',
+        sizes: [200, 400],
+        thumbnailTimestamp: undefined,
+      });
+    });
+
+    it('should not trigger video thumbnails for image files', async () => {
+      const dispatchJob = jest.fn().mockResolvedValue(undefined);
+
+      const moduleWithThumbs: TestingModule = await Test.createTestingModule({
+        providers: [
+          MediasService,
+          MediasLoggerService,
+          MediasStorageService,
+          MediasValidationService,
+          MediasResizeService,
+          MediasVideoService,
+          {
+            provide: MinioService,
+            useValue: { client: mockMinioClient },
+          },
+          {
+            provide: MEDIAS_MODULE_OPTIONS,
+            useValue: {
+              ...mockOptions,
+              videoThumbnails: {
+                sizes: [200, 400],
+                dispatchJob,
+              },
+            },
+          },
+        ],
+      }).compile();
+
+      const serviceWithThumbs = moduleWithThumbs.get<MediasService>(MediasService);
+      mockMinioClient.putObject.mockResolvedValue({});
+
+      await serviceWithThumbs.uploadMedia('photo.jpg', Buffer.from('image content'));
+
+      expect(dispatchJob).not.toHaveBeenCalled();
+    });
+
+    it('should not trigger video thumbnails when skipPreGeneration is true', async () => {
+      const dispatchJob = jest.fn().mockResolvedValue(undefined);
+
+      const moduleWithThumbs: TestingModule = await Test.createTestingModule({
+        providers: [
+          MediasService,
+          MediasLoggerService,
+          MediasStorageService,
+          MediasValidationService,
+          MediasResizeService,
+          MediasVideoService,
+          {
+            provide: MinioService,
+            useValue: { client: mockMinioClient },
+          },
+          {
+            provide: MEDIAS_MODULE_OPTIONS,
+            useValue: {
+              ...mockOptions,
+              videoThumbnails: {
+                sizes: [200, 400],
+                dispatchJob,
+              },
+            },
+          },
+        ],
+      }).compile();
+
+      const serviceWithThumbs = moduleWithThumbs.get<MediasService>(MediasService);
+      mockMinioClient.putObject.mockResolvedValue({});
+
+      await serviceWithThumbs.uploadMedia('clip.mp4', Buffer.from('video content'), undefined, true);
+
+      expect(dispatchJob).not.toHaveBeenCalled();
     });
   });
 
