@@ -1,5 +1,5 @@
+import { Readable } from 'node:stream';
 import { MinioService } from 'nestjs-minio-client';
-import { Readable } from 'stream';
 import { MediasModuleOptions } from '../interfaces/medias-module-options.interface';
 import { MediasLoggerService } from './medias-logger.service';
 export interface MediaStatResult {

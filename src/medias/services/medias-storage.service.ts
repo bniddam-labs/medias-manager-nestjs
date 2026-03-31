@@ -1,8 +1,8 @@
+import { Readable } from 'node:stream';
 import { Inject, Injectable, InternalServerErrorException, NotFoundException } from '@nestjs/common';
 import { MinioService } from 'nestjs-minio-client';
-import { Readable } from 'stream';
-import { MEDIAS_MODULE_OPTIONS, RETRY_CONFIG, TRANSIENT_S3_ERROR_CODES } from '../medias.constants';
 import { MediasModuleOptions } from '../interfaces/medias-module-options.interface';
+import { MEDIAS_MODULE_OPTIONS, RETRY_CONFIG, TRANSIENT_S3_ERROR_CODES } from '../medias.constants';
 import { MediasLoggerService } from './medias-logger.service';
 
 /**
@@ -85,7 +85,7 @@ export class MediasStorageService {
           throw error;
         }
 
-        const backoffMs = RETRY_CONFIG.INITIAL_BACKOFF_MS * Math.pow(RETRY_CONFIG.BACKOFF_MULTIPLIER, attempt - 1);
+        const backoffMs = RETRY_CONFIG.INITIAL_BACKOFF_MS * RETRY_CONFIG.BACKOFF_MULTIPLIER ** (attempt - 1);
         this.logger.warn('Transient S3 error, retrying', {
           operation: context.operationName,
           fileName: context.fileName,
@@ -106,10 +106,7 @@ export class MediasStorageService {
   async getFileStream(fileName: string): Promise<Readable> {
     this.logger.verbose('Fetching file stream from S3', { fileName, bucket: this.getBucketName() });
     try {
-      const fileStream = await this.withRetry(
-        () => this.minioService.client.getObject(this.getBucketName(), fileName) as Promise<Readable>,
-        { operationName: 'getObject', fileName },
-      );
+      const fileStream = await this.withRetry(() => this.minioService.client.getObject(this.getBucketName(), fileName) as Promise<Readable>, { operationName: 'getObject', fileName });
       this.logger.verbose('File stream obtained', { fileName });
       return fileStream;
     } catch (error) {
@@ -165,10 +162,7 @@ export class MediasStorageService {
 
   async putFile(fileName: string, file: Buffer, metadata?: Record<string, string>): Promise<void> {
     this.logger.verbose('Uploading file to S3', { fileName, size: file.length });
-    await this.withRetry(
-      () => (metadata ? this.minioService.client.putObject(this.getBucketName(), fileName, file, metadata) : this.minioService.client.putObject(this.getBucketName(), fileName, file)),
-      { operationName: 'putObject', fileName },
-    );
+    await this.withRetry(() => (metadata ? this.minioService.client.putObject(this.getBucketName(), fileName, file, metadata) : this.minioService.client.putObject(this.getBucketName(), fileName, file)), { operationName: 'putObject', fileName });
     this.logger.info('File uploaded to S3', { fileName, size: file.length });
   }
 

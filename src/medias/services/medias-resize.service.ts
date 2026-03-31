@@ -1,8 +1,8 @@
+import { Readable } from 'node:stream';
 import { BadRequestException, Inject, Injectable } from '@nestjs/common';
 import sharp, { Sharp } from 'sharp';
-import { Readable } from 'stream';
-import { DEFAULT_MAX_ORIGINAL_FILE_SIZE, IMAGE_QUALITY, ImageFormat, MEDIAS_MODULE_OPTIONS, SIZE_UNITS } from '../medias.constants';
 import { MediasModuleOptions } from '../interfaces/medias-module-options.interface';
+import { DEFAULT_MAX_ORIGINAL_FILE_SIZE, IMAGE_QUALITY, ImageFormat, MEDIAS_MODULE_OPTIONS, SIZE_UNITS } from '../medias.constants';
 import { MediasLoggerService } from './medias-logger.service';
 import { MediasStorageService } from './medias-storage.service';
 import { MediasValidationService } from './medias-validation.service';
@@ -83,7 +83,6 @@ export class MediasResizeService {
         return pipeline.jpeg({ quality: IMAGE_QUALITY.JPEG });
       case 'avif':
         return pipeline.avif({ quality: IMAGE_QUALITY.AVIF });
-      case 'original':
       default:
         return pipeline;
     }
@@ -97,7 +96,6 @@ export class MediasResizeService {
         return 'image/jpeg';
       case 'avif':
         return 'image/avif';
-      case 'original':
       default:
         return this.validation.getMimeType(originalExt);
     }
@@ -111,7 +109,6 @@ export class MediasResizeService {
         return '.jpg';
       case 'avif':
         return '.avif';
-      case 'original':
       default:
         return originalExt;
     }
@@ -160,13 +157,7 @@ export class MediasResizeService {
    * Generate a single image variant
    * Shared logic used by preGenerate and batchResize
    */
-  async generateVariant(
-    fileName: string,
-    buffer: Buffer,
-    size: number,
-    originalWidth?: number,
-    skipUpload = false,
-  ): Promise<GenerateVariantResult> {
+  async generateVariant(fileName: string, buffer: Buffer, size: number, originalWidth?: number, skipUpload = false): Promise<GenerateVariantResult> {
     const maxWidth = this.validation.getMaxResizeWidth();
     const autoPreventUpscale = this.validation.isAutoPreventUpscaleEnabled();
 
@@ -258,9 +249,7 @@ export class MediasResizeService {
         size: stat.size,
         maxOriginalSize,
       });
-      throw new BadRequestException(
-        `Image too large to resize on-the-fly (${Math.round(stat.size / SIZE_UNITS.MEGABYTE)}MB). Maximum allowed: ${Math.round(maxOriginalSize / SIZE_UNITS.MEGABYTE)}MB.`,
-      );
+      throw new BadRequestException(`Image too large to resize on-the-fly (${Math.round(stat.size / SIZE_UNITS.MEGABYTE)}MB). Maximum allowed: ${Math.round(maxOriginalSize / SIZE_UNITS.MEGABYTE)}MB.`);
     }
 
     const ext = this.validation.getExtension(fileName);

@@ -29,7 +29,7 @@ let MediasController = MediasController_1 = class MediasController {
         const fileName = Array.isArray(params.fileName) ? params.fileName.join('/') : params.fileName;
         const { size } = query;
         const ifNoneMatch = req.headers['if-none-match'];
-        const acceptHeader = req.headers['accept'];
+        const acceptHeader = req.headers.accept;
         try {
             if (size && parseInt(size, 10) > 0) {
                 const requestedSize = parseInt(size, 10);

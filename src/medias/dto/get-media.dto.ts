@@ -82,7 +82,7 @@ const GetMediaQuerySchema = z.object({
       (val) => {
         if (!val) return true;
         const num = parseInt(val, 10);
-        return !isNaN(num) && num > 0 && num <= MAX_RESIZE_WIDTH_LIMIT;
+        return !Number.isNaN(num) && num > 0 && num <= MAX_RESIZE_WIDTH_LIMIT;
       },
       {
         error: `Size must be a positive integer between 1 and ${MAX_RESIZE_WIDTH_LIMIT}`,

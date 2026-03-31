@@ -1,22 +1,12 @@
+import { Readable } from 'node:stream';
 import { BadRequestException, Inject, Injectable } from '@nestjs/common';
 import sharp from 'sharp';
-import { Readable } from 'stream';
-import { ImageFormat, MEDIAS_MODULE_OPTIONS, S3_METADATA_KEYS } from './medias.constants';
 import { MediasModuleOptions } from './interfaces/medias-module-options.interface';
-import {
-  MediasLoggerService,
-  MediasStorageService,
-  MediasValidationService,
-  MediasResizeService,
-  MediaStatResult,
-  MediaBufferResponse,
-  MediaStreamResponse,
-  BatchResizeRequestItem,
-  BatchResizeResultItem,
-} from './services';
+import { ImageFormat, MEDIAS_MODULE_OPTIONS, S3_METADATA_KEYS } from './medias.constants';
+import { BatchResizeRequestItem, BatchResizeResultItem, MediaBufferResponse, MediaStatResult, MediaStreamResponse, MediasLoggerService, MediasResizeService, MediasStorageService, MediasValidationService } from './services';
 
 // Re-export types for backward compatibility
-export { MediaStatResult, MediaBufferResponse, MediaStreamResponse, BatchResizeRequestItem, BatchResizeResultItem };
+export { BatchResizeRequestItem, BatchResizeResultItem, MediaBufferResponse, MediaStatResult, MediaStreamResponse };
 
 /**
  * Main service for media storage, retrieval, and image resizing
@@ -238,7 +228,7 @@ export class MediasService {
   private async triggerPreGeneration(fileName: string, buffer: Buffer): Promise<void> {
     const preGen = this.options.preGeneration;
 
-    if (!preGen || !preGen.sizes || preGen.sizes.length === 0) {
+    if (!preGen?.sizes || preGen.sizes.length === 0) {
       return;
     }
 

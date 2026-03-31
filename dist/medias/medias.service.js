@@ -152,7 +152,7 @@ let MediasService = class MediasService {
     }
     async triggerPreGeneration(fileName, buffer) {
         const preGen = this.options.preGeneration;
-        if (!preGen || !preGen.sizes || preGen.sizes.length === 0) {
+        if (!preGen?.sizes || preGen.sizes.length === 0) {
             return;
         }
         if (!this.validation.isResizable(fileName)) {

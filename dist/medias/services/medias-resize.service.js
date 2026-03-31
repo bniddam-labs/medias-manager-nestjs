@@ -37,7 +37,6 @@ let MediasResizeService = class MediasResizeService {
                 return pipeline.jpeg({ quality: medias_constants_1.IMAGE_QUALITY.JPEG });
             case 'avif':
                 return pipeline.avif({ quality: medias_constants_1.IMAGE_QUALITY.AVIF });
-            case 'original':
             default:
                 return pipeline;
         }
@@ -50,7 +49,6 @@ let MediasResizeService = class MediasResizeService {
                 return 'image/jpeg';
             case 'avif':
                 return 'image/avif';
-            case 'original':
             default:
                 return this.validation.getMimeType(originalExt);
         }
@@ -63,7 +61,6 @@ let MediasResizeService = class MediasResizeService {
                 return '.jpg';
             case 'avif':
                 return '.avif';
-            case 'original':
             default:
                 return originalExt;
         }

@@ -1,8 +1,8 @@
-import { Readable } from 'stream';
-import { ImageFormat } from './medias.constants';
+import { Readable } from 'node:stream';
 import { MediasModuleOptions } from './interfaces/medias-module-options.interface';
-import { MediasLoggerService, MediasStorageService, MediasValidationService, MediasResizeService, MediaStatResult, MediaBufferResponse, MediaStreamResponse, BatchResizeRequestItem, BatchResizeResultItem } from './services';
-export { MediaStatResult, MediaBufferResponse, MediaStreamResponse, BatchResizeRequestItem, BatchResizeResultItem };
+import { ImageFormat } from './medias.constants';
+import { BatchResizeRequestItem, BatchResizeResultItem, MediaBufferResponse, MediaStatResult, MediaStreamResponse, MediasLoggerService, MediasResizeService, MediasStorageService, MediasValidationService } from './services';
+export { BatchResizeRequestItem, BatchResizeResultItem, MediaBufferResponse, MediaStatResult, MediaStreamResponse };
 export declare class MediasService {
     private readonly options;
     private readonly logger;

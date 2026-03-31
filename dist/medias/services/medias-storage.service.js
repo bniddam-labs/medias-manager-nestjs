@@ -67,7 +67,7 @@ let MediasStorageService = class MediasStorageService {
                     });
                     throw error;
                 }
-                const backoffMs = medias_constants_1.RETRY_CONFIG.INITIAL_BACKOFF_MS * Math.pow(medias_constants_1.RETRY_CONFIG.BACKOFF_MULTIPLIER, attempt - 1);
+                const backoffMs = medias_constants_1.RETRY_CONFIG.INITIAL_BACKOFF_MS * medias_constants_1.RETRY_CONFIG.BACKOFF_MULTIPLIER ** (attempt - 1);
                 this.logger.warn('Transient S3 error, retrying', {
                     operation: context.operationName,
                     fileName: context.fileName,

@@ -1,4 +1,4 @@
 export { MediasLoggerService } from './medias-logger.service';
-export { MediasStorageService, MediaStatResult } from './medias-storage.service';
+export { BatchResizeRequestItem, BatchResizeResultItem, MediaBufferResponse, MediaStreamResponse, MediasResizeService } from './medias-resize.service';
+export { MediaStatResult, MediasStorageService } from './medias-storage.service';
 export { MediasValidationService } from './medias-validation.service';
-export { MediasResizeService, MediaBufferResponse, MediaStreamResponse, BatchResizeRequestItem, BatchResizeResultItem } from './medias-resize.service';

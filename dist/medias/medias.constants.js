@@ -85,16 +85,7 @@ exports.RETRY_CONFIG = {
     INITIAL_BACKOFF_MS: 50,
     BACKOFF_MULTIPLIER: 2,
 };
-exports.TRANSIENT_S3_ERROR_CODES = [
-    'RequestTimeout',
-    'RequestTimeoutException',
-    'PriorRequestNotComplete',
-    'ConnectionError',
-    'NetworkingError',
-    'SlowDown',
-    'ServiceUnavailable',
-    'InternalError',
-];
+exports.TRANSIENT_S3_ERROR_CODES = ['RequestTimeout', 'RequestTimeoutException', 'PriorRequestNotComplete', 'ConnectionError', 'NetworkingError', 'SlowDown', 'ServiceUnavailable', 'InternalError'];
 exports.S3_METADATA_KEYS = {
     WIDTH: 'x-amz-meta-width',
     HEIGHT: 'x-amz-meta-height',

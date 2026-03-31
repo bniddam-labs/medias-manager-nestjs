@@ -1,10 +1,10 @@
 import { DynamicModule, Module, Provider } from '@nestjs/common';
 import { MinioModule } from 'nestjs-minio-client';
+import { MediasModuleAsyncOptions, MediasModuleOptions, MediasModuleOptionsFactory } from './interfaces/medias-module-options.interface';
 import { MEDIAS_MODULE_OPTIONS } from './medias.constants';
 import { MediasController } from './medias.controller';
 import { MediasService } from './medias.service';
-import { MediasModuleAsyncOptions, MediasModuleOptions, MediasModuleOptionsFactory } from './interfaces/medias-module-options.interface';
-import { MediasLoggerService, MediasStorageService, MediasValidationService, MediasResizeService } from './services';
+import { MediasLoggerService, MediasResizeService, MediasStorageService, MediasValidationService } from './services';
 
 // Internal services (not exported)
 const INTERNAL_SERVICES = [MediasLoggerService, MediasStorageService, MediasValidationService, MediasResizeService];

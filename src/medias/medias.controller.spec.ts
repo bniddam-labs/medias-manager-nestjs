@@ -1,9 +1,9 @@
-import { Test, TestingModule } from '@nestjs/testing';
+import { Readable } from 'node:stream';
 import { BadRequestException } from '@nestjs/common';
+import { Test, TestingModule } from '@nestjs/testing';
+import { Request, Response } from 'express';
 import { MediasController } from './medias.controller';
 import { MediasService } from './medias.service';
-import { Response, Request } from 'express';
-import { Readable } from 'stream';
 
 describe('MediasController', () => {
   let controller: MediasController;

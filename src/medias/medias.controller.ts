@@ -19,7 +19,7 @@ export class MediasController {
     const fileName = Array.isArray(params.fileName) ? params.fileName.join('/') : params.fileName;
     const { size } = query;
     const ifNoneMatch = req.headers['if-none-match'] as string | undefined;
-    const acceptHeader = req.headers['accept'] as string | undefined;
+    const acceptHeader = req.headers.accept as string | undefined;
 
     try {
       // If size is requested, attempt to resize (only works for images)

@@ -1,10 +1,10 @@
-import { Test, TestingModule } from '@nestjs/testing';
+import { Readable } from 'node:stream';
 import { BadRequestException } from '@nestjs/common';
-import { MediasService } from './medias.service';
-import { MEDIAS_MODULE_OPTIONS } from './medias.constants';
+import { Test, TestingModule } from '@nestjs/testing';
 import { MinioService } from 'nestjs-minio-client';
-import { Readable } from 'stream';
-import { MediasLoggerService, MediasStorageService, MediasValidationService, MediasResizeService } from './services';
+import { MEDIAS_MODULE_OPTIONS } from './medias.constants';
+import { MediasService } from './medias.service';
+import { MediasLoggerService, MediasResizeService, MediasStorageService, MediasValidationService } from './services';
 
 // Mock sharp module
 jest.mock('sharp', () => {
@@ -270,9 +270,7 @@ describe('MediasService', () => {
         metaData: {},
       });
 
-      await expect(service.getResizedImage('huge-photo.jpg', 300)).rejects.toThrow(
-        /Image too large to resize on-the-fly/,
-      );
+      await expect(service.getResizedImage('huge-photo.jpg', 300)).rejects.toThrow(/Image too large to resize on-the-fly/);
     });
 
     it('should prevent upscaling when autoPreventUpscale is true (default)', async () => {

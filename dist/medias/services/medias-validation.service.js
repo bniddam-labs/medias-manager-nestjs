@@ -46,9 +46,9 @@ var __param = (this && this.__param) || function (paramIndex, decorator) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.MediasValidationService = void 0;
+const crypto = __importStar(require("node:crypto"));
+const path = __importStar(require("node:path"));
 const common_1 = require("@nestjs/common");
-const crypto = __importStar(require("crypto"));
-const path = __importStar(require("path"));
 const medias_constants_1 = require("../medias.constants");
 const medias_logger_service_1 = require("./medias-logger.service");
 let MediasValidationService = class MediasValidationService {

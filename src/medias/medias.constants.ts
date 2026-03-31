@@ -171,16 +171,7 @@ export const RETRY_CONFIG = {
 /**
  * S3 error codes that should trigger a retry
  */
-export const TRANSIENT_S3_ERROR_CODES = [
-  'RequestTimeout',
-  'RequestTimeoutException',
-  'PriorRequestNotComplete',
-  'ConnectionError',
-  'NetworkingError',
-  'SlowDown',
-  'ServiceUnavailable',
-  'InternalError',
-];
+export const TRANSIENT_S3_ERROR_CODES = ['RequestTimeout', 'RequestTimeoutException', 'PriorRequestNotComplete', 'ConnectionError', 'NetworkingError', 'SlowDown', 'ServiceUnavailable', 'InternalError'];
 
 /**
  * S3 metadata keys for enriched file information

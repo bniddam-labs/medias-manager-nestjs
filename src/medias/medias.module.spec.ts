@@ -1,7 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
+import { MEDIAS_MODULE_OPTIONS } from './medias.constants';
 import { MediasModule } from './medias.module';
 import { MediasService } from './medias.service';
-import { MEDIAS_MODULE_OPTIONS } from './medias.constants';
 
 describe('MediasModule', () => {
   const mockOptions = {

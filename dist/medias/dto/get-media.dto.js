@@ -37,7 +37,7 @@ const GetMediaQuerySchema = zod_1.z.object({
         if (!val)
             return true;
         const num = parseInt(val, 10);
-        return !isNaN(num) && num > 0 && num <= medias_constants_1.MAX_RESIZE_WIDTH_LIMIT;
+        return !Number.isNaN(num) && num > 0 && num <= medias_constants_1.MAX_RESIZE_WIDTH_LIMIT;
     }, {
         error: `Size must be a positive integer between 1 and ${medias_constants_1.MAX_RESIZE_WIDTH_LIMIT}`,
     }),

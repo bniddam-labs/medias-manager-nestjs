@@ -1,6 +1,6 @@
-import { Readable } from 'stream';
-import { ImageFormat } from '../medias.constants';
+import { Readable } from 'node:stream';
 import { MediasModuleOptions } from '../interfaces/medias-module-options.interface';
+import { ImageFormat } from '../medias.constants';
 import { MediasLoggerService } from './medias-logger.service';
 import { MediasStorageService } from './medias-storage.service';
 import { MediasValidationService } from './medias-validation.service';

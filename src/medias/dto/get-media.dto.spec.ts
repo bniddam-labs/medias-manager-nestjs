@@ -1,7 +1,6 @@
-import { GetMediaParamsDto, GetMediaParamsLooseDto, GetMediaQueryDto, createGetMediaParamsSchema } from './get-media.dto';
-import { ZodValidationPipe, ZodValidationException } from 'nestjs-zod';
 import { ArgumentMetadata } from '@nestjs/common';
-import { createZodDto } from 'nestjs-zod';
+import { createZodDto, ZodValidationException, ZodValidationPipe } from 'nestjs-zod';
+import { createGetMediaParamsSchema, GetMediaParamsDto, GetMediaParamsLooseDto, GetMediaQueryDto } from './get-media.dto';
 
 describe('GetMediaParamsDto (strict mode - default)', () => {
   const pipe = new ZodValidationPipe();
@@ -80,7 +79,7 @@ describe('GetMediaParamsDto (strict mode - default)', () => {
     });
 
     it('should reject file names that are too long', () => {
-      const longFileName = 'a'.repeat(256) + '.jpg';
+      const longFileName = `${'a'.repeat(256)}.jpg`;
       expect(() => pipe.transform({ fileName: longFileName }, metadata)).toThrow(ZodValidationException);
     });
   });
@@ -140,7 +139,7 @@ describe('GetMediaParamsLooseDto (loose mode)', () => {
     });
 
     it('should reject file names that are too long', () => {
-      const longFileName = 'a'.repeat(256) + '.jpg';
+      const longFileName = `${'a'.repeat(256)}.jpg`;
       expect(() => pipe.transform({ fileName: longFileName }, metadata)).toThrow(ZodValidationException);
     });
   });
