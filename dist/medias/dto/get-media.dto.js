@@ -42,13 +42,16 @@ const GetMediaQuerySchema = zod_1.z.object({
         error: `Size must be a positive integer between 1 and ${medias_constants_1.MAX_RESIZE_WIDTH_LIMIT}`,
     }),
 });
-class GetMediaParamsDto extends (0, nestjs_zod_1.createZodDto)(GetMediaParamsSchema) {
+const GetMediaParamsDtoBase = (0, nestjs_zod_1.createZodDto)(GetMediaParamsSchema);
+class GetMediaParamsDto extends GetMediaParamsDtoBase {
 }
 exports.GetMediaParamsDto = GetMediaParamsDto;
-class GetMediaParamsLooseDto extends (0, nestjs_zod_1.createZodDto)(GetMediaParamsLooseSchema) {
+const GetMediaParamsLooseDtoBase = (0, nestjs_zod_1.createZodDto)(GetMediaParamsLooseSchema);
+class GetMediaParamsLooseDto extends GetMediaParamsLooseDtoBase {
 }
 exports.GetMediaParamsLooseDto = GetMediaParamsLooseDto;
-class GetMediaQueryDto extends (0, nestjs_zod_1.createZodDto)(GetMediaQuerySchema) {
+const GetMediaQueryDtoBase = (0, nestjs_zod_1.createZodDto)(GetMediaQuerySchema);
+class GetMediaQueryDto extends GetMediaQueryDtoBase {
 }
 exports.GetMediaQueryDto = GetMediaQueryDto;
 //# sourceMappingURL=get-media.dto.js.map

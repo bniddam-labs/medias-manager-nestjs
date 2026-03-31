@@ -1,16 +1,19 @@
+import { type ZodDto } from 'nestjs-zod';
 import { z } from 'zod';
 export declare const createDeleteMediaParamsSchema: (strict?: boolean) => z.ZodObject<{
     fileName: z.ZodString;
 }, z.core.$strip>;
-declare const DeleteMediaParamsDto_base: import("nestjs-zod").ZodDto<z.ZodObject<{
+declare const DeleteMediaParamsSchema: z.ZodObject<{
     fileName: z.ZodString;
-}, z.core.$strip>, false>;
-export declare class DeleteMediaParamsDto extends DeleteMediaParamsDto_base {
+}, z.core.$strip>;
+declare const DeleteMediaParamsLooseSchema: z.ZodObject<{
+    fileName: z.ZodString;
+}, z.core.$strip>;
+declare const DeleteMediaParamsDtoBase: ZodDto<typeof DeleteMediaParamsSchema>;
+export declare class DeleteMediaParamsDto extends DeleteMediaParamsDtoBase {
 }
-declare const DeleteMediaParamsLooseDto_base: import("nestjs-zod").ZodDto<z.ZodObject<{
-    fileName: z.ZodString;
-}, z.core.$strip>, false>;
-export declare class DeleteMediaParamsLooseDto extends DeleteMediaParamsLooseDto_base {
+declare const DeleteMediaParamsLooseDtoBase: ZodDto<typeof DeleteMediaParamsLooseSchema>;
+export declare class DeleteMediaParamsLooseDto extends DeleteMediaParamsLooseDtoBase {
 }
 export {};
 //# sourceMappingURL=delete-media.dto.d.ts.map

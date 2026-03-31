@@ -29,10 +29,12 @@ const createDeleteMediaParamsSchema = (strict = true) => zod_1.z.object({
 exports.createDeleteMediaParamsSchema = createDeleteMediaParamsSchema;
 const DeleteMediaParamsSchema = (0, exports.createDeleteMediaParamsSchema)(true);
 const DeleteMediaParamsLooseSchema = (0, exports.createDeleteMediaParamsSchema)(false);
-class DeleteMediaParamsDto extends (0, nestjs_zod_1.createZodDto)(DeleteMediaParamsSchema) {
+const DeleteMediaParamsDtoBase = (0, nestjs_zod_1.createZodDto)(DeleteMediaParamsSchema);
+class DeleteMediaParamsDto extends DeleteMediaParamsDtoBase {
 }
 exports.DeleteMediaParamsDto = DeleteMediaParamsDto;
-class DeleteMediaParamsLooseDto extends (0, nestjs_zod_1.createZodDto)(DeleteMediaParamsLooseSchema) {
+const DeleteMediaParamsLooseDtoBase = (0, nestjs_zod_1.createZodDto)(DeleteMediaParamsLooseSchema);
+class DeleteMediaParamsLooseDto extends DeleteMediaParamsLooseDtoBase {
 }
 exports.DeleteMediaParamsLooseDto = DeleteMediaParamsLooseDto;
 //# sourceMappingURL=delete-media.dto.js.map

@@ -1,4 +1,4 @@
-import { createZodDto } from 'nestjs-zod';
+import { createZodDto, type ZodDto } from 'nestjs-zod';
 import { z } from 'zod';
 import { ALL_MEDIA_EXTENSIONS, MAX_FILENAME_LENGTH, MAX_RESIZE_WIDTH_LIMIT } from '../medias.constants';
 
@@ -91,9 +91,12 @@ const GetMediaQuerySchema = z.object({
 });
 
 /** Strict mode DTO (default) - only alphanumeric, dots, hyphens, underscores, slashes */
-export class GetMediaParamsDto extends createZodDto(GetMediaParamsSchema) {}
+const GetMediaParamsDtoBase: ZodDto<typeof GetMediaParamsSchema> = createZodDto(GetMediaParamsSchema);
+export class GetMediaParamsDto extends GetMediaParamsDtoBase {}
 
 /** Loose mode DTO - accepts Unicode, spaces, parentheses, etc. */
-export class GetMediaParamsLooseDto extends createZodDto(GetMediaParamsLooseSchema) {}
+const GetMediaParamsLooseDtoBase: ZodDto<typeof GetMediaParamsLooseSchema> = createZodDto(GetMediaParamsLooseSchema);
+export class GetMediaParamsLooseDto extends GetMediaParamsLooseDtoBase {}
 
-export class GetMediaQueryDto extends createZodDto(GetMediaQuerySchema) {}
+const GetMediaQueryDtoBase: ZodDto<typeof GetMediaQuerySchema> = createZodDto(GetMediaQuerySchema);
+export class GetMediaQueryDto extends GetMediaQueryDtoBase {}

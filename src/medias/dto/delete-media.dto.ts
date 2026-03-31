@@ -1,4 +1,4 @@
-import { createZodDto } from 'nestjs-zod';
+import { createZodDto, type ZodDto } from 'nestjs-zod';
 import { z } from 'zod';
 import { ALL_MEDIA_EXTENSIONS, MAX_FILENAME_LENGTH } from '../medias.constants';
 
@@ -72,7 +72,9 @@ const DeleteMediaParamsSchema = createDeleteMediaParamsSchema(true);
 const DeleteMediaParamsLooseSchema = createDeleteMediaParamsSchema(false);
 
 /** Strict mode DTO (default) - only alphanumeric, dots, hyphens, underscores, slashes */
-export class DeleteMediaParamsDto extends createZodDto(DeleteMediaParamsSchema) {}
+const DeleteMediaParamsDtoBase: ZodDto<typeof DeleteMediaParamsSchema> = createZodDto(DeleteMediaParamsSchema);
+export class DeleteMediaParamsDto extends DeleteMediaParamsDtoBase {}
 
 /** Loose mode DTO - accepts Unicode, spaces, parentheses, etc. */
-export class DeleteMediaParamsLooseDto extends createZodDto(DeleteMediaParamsLooseSchema) {}
+const DeleteMediaParamsLooseDtoBase: ZodDto<typeof DeleteMediaParamsLooseSchema> = createZodDto(DeleteMediaParamsLooseSchema);
+export class DeleteMediaParamsLooseDto extends DeleteMediaParamsLooseDtoBase {}
