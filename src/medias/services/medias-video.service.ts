@@ -210,13 +210,52 @@ export class MediasVideoService implements OnModuleInit {
       return;
     }
 
-    // 4. Generate each thumbnail size
+    // 4. Get frame dimensions for upscale prevention
+    const maxResizeWidth = this.validation.getMaxResizeWidth();
+    const autoPreventUpscale = this.validation.isAutoPreventUpscaleEnabled();
+    let frameWidth: number | undefined;
+
+    if (autoPreventUpscale) {
+      try {
+        const frameMetadata = await sharp(frameBuffer).metadata();
+        frameWidth = frameMetadata.width;
+        this.logger.debug('Frame dimensions for upscale prevention', { fileName, frameWidth, frameHeight: frameMetadata.height });
+      } catch (error) {
+        this.logger.warn('Failed to get frame metadata for upscale prevention', {
+          fileName,
+          error: error instanceof Error ? error.message : 'Unknown error',
+        });
+      }
+    }
+
+    // 5. Generate each thumbnail size
     for (const size of sizes) {
       const thumbnailStartTime = Date.now();
       const thumbnailFileName = this.validation.buildThumbnailFileName(fileName, size, outputExt);
 
       try {
-        let pipeline = sharp(frameBuffer).resize(size);
+        // Validate size against maxResizeWidth
+        if (size > maxResizeWidth) {
+          this.logger.warn('Thumbnail size exceeds maxResizeWidth, skipping', {
+            fileName,
+            size,
+            maxResizeWidth,
+          });
+          continue;
+        }
+
+        // Prevent upscaling if enabled
+        let finalSize = size;
+        if (autoPreventUpscale && frameWidth && size > frameWidth) {
+          this.logger.debug('Thumbnail size exceeds frame width, clamping', {
+            fileName,
+            requestedSize: size,
+            frameWidth,
+          });
+          finalSize = frameWidth;
+        }
+
+        let pipeline = sharp(frameBuffer).resize(finalSize);
         pipeline = this.applyFormat(pipeline, outputFormat);
         const thumbnailBuffer = await pipeline.toBuffer();
 
