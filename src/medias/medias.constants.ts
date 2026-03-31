@@ -183,3 +183,19 @@ export const S3_METADATA_KEYS = {
   ORIGINAL_NAME: 'x-amz-meta-original-name',
   UPLOADED_AT: 'x-amz-meta-uploaded-at',
 } as const;
+
+/**
+ * Video thumbnail configuration
+ */
+
+/** Default timestamp position for video thumbnail extraction (percentage of duration) */
+export const DEFAULT_THUMBNAIL_TIMESTAMP_PERCENT = 10;
+
+/** Divisor for percentage-to-decimal conversion */
+export const PERCENTAGE_DIVISOR = 100;
+
+/** Infix used in thumbnail file names to distinguish from image resizes */
+export const THUMBNAIL_FILENAME_INFIX = 'thumb';
+
+/** Number of frames to extract from video */
+export const FFMPEG_FRAME_COUNT = 1;
