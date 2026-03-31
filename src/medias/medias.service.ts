@@ -3,7 +3,7 @@ import { BadRequestException, Inject, Injectable } from '@nestjs/common';
 import sharp from 'sharp';
 import { MediasModuleOptions } from './interfaces/medias-module-options.interface';
 import { ImageFormat, MEDIAS_MODULE_OPTIONS, S3_METADATA_KEYS } from './medias.constants';
-import { BatchResizeRequestItem, BatchResizeResultItem, MediaBufferResponse, MediaStatResult, MediaStreamResponse, MediasLoggerService, MediasResizeService, MediasStorageService, MediasValidationService } from './services';
+import { BatchResizeRequestItem, BatchResizeResultItem, MediaBufferResponse, MediaStatResult, MediaStreamResponse, MediasLoggerService, MediasResizeService, MediasStorageService, MediasValidationService, MediasVideoService } from './services';
 
 // Re-export types for backward compatibility
 export { BatchResizeRequestItem, BatchResizeResultItem, MediaBufferResponse, MediaStatResult, MediaStreamResponse };
@@ -23,6 +23,7 @@ export class MediasService {
     private readonly storage: MediasStorageService,
     private readonly validation: MediasValidationService,
     private readonly resize: MediasResizeService,
+    private readonly video: MediasVideoService,
   ) {
     this.logger.verbose('MediasService initialized', { bucket: options.s3.bucketName });
   }
@@ -43,6 +44,13 @@ export class MediasService {
    */
   isResizable(fileName: string): boolean {
     return this.validation.isResizable(fileName);
+  }
+
+  /**
+   * Check if file is a video based on extension
+   */
+  isVideo(fileName: string): boolean {
+    return this.validation.isVideo(fileName);
   }
 
   /**
@@ -196,6 +204,7 @@ export class MediasService {
         // Trigger pre-generation if configured
         if (!skipPreGeneration) {
           await this.triggerPreGeneration(fileName, file);
+          await this.triggerVideoThumbnailGeneration(fileName, file);
         }
 
         return;
@@ -219,6 +228,7 @@ export class MediasService {
     // Trigger pre-generation if configured
     if (!skipPreGeneration) {
       await this.triggerPreGeneration(fileName, file);
+      await this.triggerVideoThumbnailGeneration(fileName, file);
     }
   }
 
@@ -267,6 +277,60 @@ export class MediasService {
       }
     } catch (error) {
       this.logger.error('Failed to trigger pre-generation', {
+        fileName,
+        error: error instanceof Error ? error.message : 'Unknown error',
+      });
+    }
+  }
+
+  /**
+   * Trigger video thumbnail generation
+   */
+  private async triggerVideoThumbnailGeneration(fileName: string, buffer: Buffer): Promise<void> {
+    const videoThumbs = this.options.videoThumbnails;
+
+    if (!videoThumbs?.sizes || videoThumbs.sizes.length === 0) {
+      return;
+    }
+
+    if (!this.validation.isVideo(fileName)) {
+      return;
+    }
+
+    this.logger.debug('Triggering video thumbnail generation', {
+      fileName,
+      sizes: videoThumbs.sizes,
+      hasDispatchJob: !!videoThumbs.dispatchJob,
+    });
+
+    try {
+      if (videoThumbs.dispatchJob) {
+        this.logger.info('Dispatching video thumbnail job to external queue', {
+          fileName,
+          sizes: videoThumbs.sizes,
+        });
+
+        await videoThumbs.dispatchJob({
+          fileName,
+          sizes: videoThumbs.sizes,
+          thumbnailTimestamp: videoThumbs.thumbnailTimestamp,
+        });
+        this.logger.info('Video thumbnail job dispatched successfully', { fileName });
+      } else {
+        this.logger.info('Starting inline video thumbnail generation (fire-and-forget)', {
+          fileName,
+          sizes: videoThumbs.sizes,
+        });
+
+        this.video.generateThumbnailsInline(fileName, buffer, videoThumbs.sizes, videoThumbs.thumbnailTimestamp).catch((error) => {
+          this.logger.error('Inline video thumbnail generation failed', {
+            fileName,
+            error: error instanceof Error ? error.message : 'Unknown error',
+          });
+        });
+      }
+    } catch (error) {
+      this.logger.error('Failed to trigger video thumbnail generation', {
         fileName,
         error: error instanceof Error ? error.message : 'Unknown error',
       });

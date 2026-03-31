@@ -4,10 +4,10 @@ import { MediasModuleAsyncOptions, MediasModuleOptions, MediasModuleOptionsFacto
 import { MEDIAS_MODULE_OPTIONS } from './medias.constants';
 import { MediasController } from './medias.controller';
 import { MediasService } from './medias.service';
-import { MediasLoggerService, MediasResizeService, MediasStorageService, MediasValidationService } from './services';
+import { MediasLoggerService, MediasResizeService, MediasStorageService, MediasValidationService, MediasVideoService } from './services';
 
 // Internal services (not exported)
-const INTERNAL_SERVICES = [MediasLoggerService, MediasStorageService, MediasValidationService, MediasResizeService];
+const INTERNAL_SERVICES = [MediasLoggerService, MediasStorageService, MediasValidationService, MediasResizeService, MediasVideoService];
 
 @Module({})
 export class MediasModule {

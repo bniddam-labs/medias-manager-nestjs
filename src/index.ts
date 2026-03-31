@@ -18,6 +18,9 @@ export type {
   MediasPreGenerationOptions,
   PreGenerateJob,
   S3Options,
+  VideoThumbnailGeneratedEvent,
+  VideoThumbnailJob,
+  VideoThumbnailOptions,
 } from './medias/interfaces/medias-module-options.interface';
 export type { ImageFormat } from './medias/medias.constants';
 // Constants
@@ -27,7 +30,9 @@ export {
   AUDIO_EXTENSIONS,
   DEFAULT_MAX_ORIGINAL_FILE_SIZE,
   DEFAULT_MAX_RESIZE_WIDTH,
+  DEFAULT_THUMBNAIL_TIMESTAMP_PERCENT,
   DOCUMENT_EXTENSIONS,
+  FFMPEG_FRAME_COUNT,
   FORMAT_PRIORITY,
   HTTP_STATUS,
   IMAGE_EXTENSIONS,
@@ -36,10 +41,12 @@ export {
   MAX_RESIZE_WIDTH_LIMIT,
   MEDIAS_MODULE_OPTIONS,
   MIME_TYPES,
+  PERCENTAGE_DIVISOR,
   RESIZABLE_IMAGE_EXTENSIONS,
   RETRY_CONFIG,
   S3_METADATA_KEYS,
   SIZE_UNITS,
+  THUMBNAIL_FILENAME_INFIX,
   TRANSIENT_S3_ERROR_CODES,
   VIDEO_EXTENSIONS,
 } from './medias/medias.constants';
