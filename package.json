@@ -1,6 +1,6 @@
 {
   "name": "@bniddam-labs/medias-manager-nestjs",
-  "version": "4.1.0",
+  "version": "4.2.0",
   "description": "A NestJS module for handling media storage, retrieval, and on-demand image resizing with S3/MinIO backend",
   "author": "Benjamin Niddam",
   "license": "MIT",
@@ -66,6 +66,7 @@
     "@types/express": "^5.0.6",
     "@types/fluent-ffmpeg": "^2.1.28",
     "@types/jest": "^30.0.0",
+    "@types/multer": "^2.1.0",
     "@types/node": "^25.0.0",
     "@types/supertest": "^7.0.0",
     "jest": "^30.0.0",
@@ -77,6 +78,7 @@
     "ts-loader": "^9.5.4",
     "ts-node": "^10.9.2",
     "tsconfig-paths": "^4.2.0",
+    "tsx": "^4.21.0",
     "typescript": "^6.0.0"
   },
   "jest": {
