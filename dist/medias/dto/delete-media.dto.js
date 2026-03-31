@@ -11,19 +11,19 @@ const commonFileNameRefinements = (schema) => schema
     const sanitized = val.replace(/\\/g, '/');
     return !sanitized.includes('../') && !sanitized.includes('/..') && !sanitized.startsWith('/');
 }, {
-    message: 'Invalid file name - path traversal detected',
+    error: 'Invalid file name - path traversal detected',
 })
     .refine((val) => {
     const ext = val.toLowerCase().match(/\.[a-z0-9]+$/)?.[0];
     return ext ? medias_constants_1.ALL_MEDIA_EXTENSIONS.includes(ext) : false;
 }, {
-    message: `Invalid file extension - allowed extensions: ${medias_constants_1.ALL_MEDIA_EXTENSIONS.join(', ')}`,
+    error: `Invalid file extension - allowed extensions: ${medias_constants_1.ALL_MEDIA_EXTENSIONS.join(', ')}`,
 });
 const strictFilenameRefinement = (val) => /^[a-zA-Z0-9._/-]+$/.test(val);
 const looseFilenameRefinement = (val) => !/[\x00-\x1F]/.test(val);
 const createDeleteMediaParamsSchema = (strict = true) => zod_1.z.object({
     fileName: commonFileNameRefinements(zod_1.z.string()).refine(strict ? strictFilenameRefinement : looseFilenameRefinement, {
-        message: strict ? 'File name contains invalid characters - only alphanumeric, dots, hyphens, underscores, and slashes are allowed' : 'File name contains invalid control characters',
+        error: strict ? 'File name contains invalid characters - only alphanumeric, dots, hyphens, underscores, and slashes are allowed' : 'File name contains invalid control characters',
     }),
 });
 exports.createDeleteMediaParamsSchema = createDeleteMediaParamsSchema;

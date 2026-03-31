@@ -16,7 +16,7 @@ const commonFileNameRefinements = (schema: z.ZodString) =>
         return !sanitized.includes('../') && !sanitized.includes('/..') && !sanitized.startsWith('/');
       },
       {
-        message: 'Invalid file name - path traversal detected',
+        error: 'Invalid file name - path traversal detected',
       },
     )
     .refine(
@@ -26,7 +26,7 @@ const commonFileNameRefinements = (schema: z.ZodString) =>
         return ext ? ALL_MEDIA_EXTENSIONS.includes(ext) : false;
       },
       {
-        message: `Invalid file extension - allowed extensions: ${ALL_MEDIA_EXTENSIONS.join(', ')}`,
+        error: `Invalid file extension - allowed extensions: ${ALL_MEDIA_EXTENSIONS.join(', ')}`,
       },
     );
 
@@ -51,7 +51,7 @@ const looseFilenameRefinement = (val: string) => !/[\x00-\x1F]/.test(val);
 export const createGetMediaParamsSchema = (strict = true) =>
   z.object({
     fileName: commonFileNameRefinements(z.string()).refine(strict ? strictFilenameRefinement : looseFilenameRefinement, {
-      message: strict ? 'File name contains invalid characters - only alphanumeric, dots, hyphens, underscores, and slashes are allowed' : 'File name contains invalid control characters',
+      error: strict ? 'File name contains invalid characters - only alphanumeric, dots, hyphens, underscores, and slashes are allowed' : 'File name contains invalid control characters',
     }),
   });
 
@@ -85,7 +85,7 @@ const GetMediaQuerySchema = z.object({
         return !isNaN(num) && num > 0 && num <= MAX_RESIZE_WIDTH_LIMIT;
       },
       {
-        message: `Size must be a positive integer between 1 and ${MAX_RESIZE_WIDTH_LIMIT}`,
+        error: `Size must be a positive integer between 1 and ${MAX_RESIZE_WIDTH_LIMIT}`,
       },
     ),
 });
