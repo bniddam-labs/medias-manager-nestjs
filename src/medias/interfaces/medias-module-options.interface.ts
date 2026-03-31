@@ -61,6 +61,22 @@ export interface FileUploadedEvent {
 }
 
 /**
+ * Event fired when a video thumbnail is generated
+ */
+export interface VideoThumbnailGeneratedEvent {
+  /** Original video file name */
+  originalFileName: string;
+  /** Generated thumbnail file name */
+  thumbnailFileName: string;
+  /** Requested thumbnail width in pixels */
+  requestedSize: number;
+  /** Processing duration in milliseconds */
+  durationMs: number;
+  /** Format used for the thumbnail */
+  format: ImageFormat;
+}
+
+/**
  * Pre-generation job for image variants
  */
 export interface PreGenerateJob {
@@ -68,6 +84,18 @@ export interface PreGenerateJob {
   fileName: string;
   /** Sizes to generate (in pixels) */
   sizes: number[];
+}
+
+/**
+ * Video thumbnail generation job for queue-based processing
+ */
+export interface VideoThumbnailJob {
+  /** Full path to the original video file in the bucket */
+  fileName: string;
+  /** Thumbnail sizes to generate (in pixels) */
+  sizes: number[];
+  /** Timestamp for frame extraction (seconds or "10%" string) */
+  thumbnailTimestamp?: number | string;
 }
 
 /**
@@ -88,6 +116,31 @@ export interface MediasPreGenerationOptions {
    * Use this for offloading heavy work to background workers (Bull, BullMQ, RabbitMQ, etc.)
    */
   dispatchJob?: (job: PreGenerateJob) => Promise<void>;
+}
+
+/**
+ * Video thumbnail generation configuration
+ */
+export interface VideoThumbnailOptions {
+  /**
+   * List of thumbnail widths in pixels to generate (e.g., [200, 400, 800])
+   */
+  sizes: number[];
+
+  /**
+   * Timestamp for frame extraction.
+   * - Number: seconds into the video (e.g., 5.5)
+   * - String with %: percentage of video duration (e.g., "10%")
+   * @default "10%"
+   */
+  thumbnailTimestamp?: number | string;
+
+  /**
+   * Optional: Callback to delegate thumbnail generation to an external queue
+   * - If defined: uploadMedia dispatches a job instead of generating inline
+   * - If undefined: Falls back to inline generation (fire-and-forget)
+   */
+  dispatchJob?: (job: VideoThumbnailJob) => Promise<void>;
 }
 
 /**
@@ -252,6 +305,32 @@ export interface MediasModuleOptions {
    * ```
    */
   preGeneration?: MediasPreGenerationOptions;
+
+  /**
+   * Optional: Video thumbnail generation configuration
+   *
+   * When enabled, automatically extracts a frame from uploaded videos
+   * and generates thumbnail images at the specified sizes.
+   *
+   * Requires ffmpeg to be installed on the system.
+   *
+   * Example:
+   * ```typescript
+   * videoThumbnails: {
+   *   sizes: [200, 400, 800],
+   *   thumbnailTimestamp: '10%',  // 10% into the video
+   *   dispatchJob: async (job) => {
+   *     await videoQueue.add('thumbnails', job);
+   *   }
+   * }
+   * ```
+   */
+  videoThumbnails?: VideoThumbnailOptions;
+
+  /**
+   * Optional: Callback fired when a video thumbnail is generated
+   */
+  onVideoThumbnailGenerated?: (event: VideoThumbnailGeneratedEvent) => void;
 
   /**
    * Optional: Enable strict filename validation using whitelist (default: true)
