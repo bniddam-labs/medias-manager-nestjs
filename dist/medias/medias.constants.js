@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.S3_METADATA_KEYS = exports.TRANSIENT_S3_ERROR_CODES = exports.RETRY_CONFIG = exports.FORMAT_PRIORITY = exports.IMAGE_QUALITY = exports.HTTP_STATUS = exports.MAX_RESIZE_WIDTH_LIMIT = exports.MAX_FILENAME_LENGTH = exports.SIZE_UNITS = exports.DEFAULT_MAX_ORIGINAL_FILE_SIZE = exports.DEFAULT_MAX_RESIZE_WIDTH = exports.MIME_TYPES = exports.ALL_MEDIA_EXTENSIONS = exports.ARCHIVE_EXTENSIONS = exports.DOCUMENT_EXTENSIONS = exports.AUDIO_EXTENSIONS = exports.VIDEO_EXTENSIONS = exports.IMAGE_EXTENSIONS = exports.RESIZABLE_IMAGE_EXTENSIONS = exports.MEDIAS_MODULE_OPTIONS = void 0;
+exports.FFMPEG_FRAME_COUNT = exports.THUMBNAIL_FILENAME_INFIX = exports.PERCENTAGE_DIVISOR = exports.DEFAULT_THUMBNAIL_TIMESTAMP_PERCENT = exports.S3_METADATA_KEYS = exports.TRANSIENT_S3_ERROR_CODES = exports.RETRY_CONFIG = exports.FORMAT_PRIORITY = exports.IMAGE_QUALITY = exports.HTTP_STATUS = exports.MAX_RESIZE_WIDTH_LIMIT = exports.MAX_FILENAME_LENGTH = exports.SIZE_UNITS = exports.DEFAULT_MAX_ORIGINAL_FILE_SIZE = exports.DEFAULT_MAX_RESIZE_WIDTH = exports.MIME_TYPES = exports.ALL_MEDIA_EXTENSIONS = exports.ARCHIVE_EXTENSIONS = exports.DOCUMENT_EXTENSIONS = exports.AUDIO_EXTENSIONS = exports.VIDEO_EXTENSIONS = exports.IMAGE_EXTENSIONS = exports.RESIZABLE_IMAGE_EXTENSIONS = exports.MEDIAS_MODULE_OPTIONS = void 0;
 exports.MEDIAS_MODULE_OPTIONS = 'MEDIAS_MODULE_OPTIONS';
 exports.RESIZABLE_IMAGE_EXTENSIONS = ['.png', '.jpg', '.jpeg', '.gif', '.webp', '.avif', '.tiff'];
 exports.IMAGE_EXTENSIONS = [...exports.RESIZABLE_IMAGE_EXTENSIONS, '.svg', '.ico', '.bmp'];
@@ -93,4 +93,8 @@ exports.S3_METADATA_KEYS = {
     ORIGINAL_NAME: 'x-amz-meta-original-name',
     UPLOADED_AT: 'x-amz-meta-uploaded-at',
 };
+exports.DEFAULT_THUMBNAIL_TIMESTAMP_PERCENT = 10;
+exports.PERCENTAGE_DIVISOR = 100;
+exports.THUMBNAIL_FILENAME_INFIX = 'thumb';
+exports.FFMPEG_FRAME_COUNT = 1;
 //# sourceMappingURL=medias.constants.js.map

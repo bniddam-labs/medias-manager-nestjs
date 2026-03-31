@@ -21,12 +21,13 @@ const sharp_1 = __importDefault(require("sharp"));
 const medias_constants_1 = require("./medias.constants");
 const services_1 = require("./services");
 let MediasService = class MediasService {
-    constructor(options, logger, storage, validation, resize) {
+    constructor(options, logger, storage, validation, resize, video) {
         this.options = options;
         this.logger = logger;
         this.storage = storage;
         this.validation = validation;
         this.resize = resize;
+        this.video = video;
         this.logger.verbose('MediasService initialized', { bucket: options.s3.bucketName });
     }
     isImage(fileName) {
@@ -34,6 +35,9 @@ let MediasService = class MediasService {
     }
     isResizable(fileName) {
         return this.validation.isResizable(fileName);
+    }
+    isVideo(fileName) {
+        return this.validation.isVideo(fileName);
     }
     getMimeType(ext) {
         return this.validation.getMimeType(ext);
@@ -130,6 +134,7 @@ let MediasService = class MediasService {
                 });
                 if (!skipPreGeneration) {
                     await this.triggerPreGeneration(fileName, file);
+                    await this.triggerVideoThumbnailGeneration(fileName, file);
                 }
                 return;
             }
@@ -148,6 +153,7 @@ let MediasService = class MediasService {
         });
         if (!skipPreGeneration) {
             await this.triggerPreGeneration(fileName, file);
+            await this.triggerVideoThumbnailGeneration(fileName, file);
         }
     }
     async triggerPreGeneration(fileName, buffer) {
@@ -193,6 +199,52 @@ let MediasService = class MediasService {
             });
         }
     }
+    async triggerVideoThumbnailGeneration(fileName, buffer) {
+        const videoThumbs = this.options.videoThumbnails;
+        if (!videoThumbs?.sizes || videoThumbs.sizes.length === 0) {
+            return;
+        }
+        if (!this.validation.isVideo(fileName)) {
+            return;
+        }
+        this.logger.debug('Triggering video thumbnail generation', {
+            fileName,
+            sizes: videoThumbs.sizes,
+            hasDispatchJob: !!videoThumbs.dispatchJob,
+        });
+        try {
+            if (videoThumbs.dispatchJob) {
+                this.logger.info('Dispatching video thumbnail job to external queue', {
+                    fileName,
+                    sizes: videoThumbs.sizes,
+                });
+                await videoThumbs.dispatchJob({
+                    fileName,
+                    sizes: videoThumbs.sizes,
+                    thumbnailTimestamp: videoThumbs.thumbnailTimestamp,
+                });
+                this.logger.info('Video thumbnail job dispatched successfully', { fileName });
+            }
+            else {
+                this.logger.info('Starting inline video thumbnail generation (fire-and-forget)', {
+                    fileName,
+                    sizes: videoThumbs.sizes,
+                });
+                this.video.generateThumbnailsInline(fileName, buffer, videoThumbs.sizes, videoThumbs.thumbnailTimestamp).catch((error) => {
+                    this.logger.error('Inline video thumbnail generation failed', {
+                        fileName,
+                        error: error instanceof Error ? error.message : 'Unknown error',
+                    });
+                });
+            }
+        }
+        catch (error) {
+            this.logger.error('Failed to trigger video thumbnail generation', {
+                fileName,
+                error: error instanceof Error ? error.message : 'Unknown error',
+            });
+        }
+    }
     async deleteMedia(fileName) {
         return this.storage.deleteFile(fileName);
     }
@@ -221,6 +273,7 @@ exports.MediasService = MediasService = __decorate([
     __metadata("design:paramtypes", [Object, services_1.MediasLoggerService,
         services_1.MediasStorageService,
         services_1.MediasValidationService,
-        services_1.MediasResizeService])
+        services_1.MediasResizeService,
+        services_1.MediasVideoService])
 ], MediasService);
 //# sourceMappingURL=medias.service.js.map

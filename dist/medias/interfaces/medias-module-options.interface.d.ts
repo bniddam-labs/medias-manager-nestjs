@@ -32,13 +32,30 @@ export interface FileUploadedEvent {
         height: number;
     };
 }
+export interface VideoThumbnailGeneratedEvent {
+    originalFileName: string;
+    thumbnailFileName: string;
+    requestedSize: number;
+    durationMs: number;
+    format: ImageFormat;
+}
 export interface PreGenerateJob {
     fileName: string;
     sizes: number[];
 }
+export interface VideoThumbnailJob {
+    fileName: string;
+    sizes: number[];
+    thumbnailTimestamp?: number | string;
+}
 export interface MediasPreGenerationOptions {
     sizes: number[];
     dispatchJob?: (job: PreGenerateJob) => Promise<void>;
+}
+export interface VideoThumbnailOptions {
+    sizes: number[];
+    thumbnailTimestamp?: number | string;
+    dispatchJob?: (job: VideoThumbnailJob) => Promise<void>;
 }
 export type MediasLogLevel = LogLevel | 'none';
 export interface MediasModuleOptions {
@@ -57,6 +74,8 @@ export interface MediasModuleOptions {
     onCacheHit?: (event: CacheHitEvent) => void;
     onUploaded?: (event: FileUploadedEvent) => void;
     preGeneration?: MediasPreGenerationOptions;
+    videoThumbnails?: VideoThumbnailOptions;
+    onVideoThumbnailGenerated?: (event: VideoThumbnailGeneratedEvent) => void;
     strictFilenameValidation?: boolean;
 }
 export interface MediasModuleOptionsFactory {

@@ -64,6 +64,10 @@ let MediasValidationService = class MediasValidationService {
         const ext = path.extname(fileName).toLowerCase();
         return medias_constants_1.RESIZABLE_IMAGE_EXTENSIONS.includes(ext);
     }
+    isVideo(fileName) {
+        const ext = path.extname(fileName).toLowerCase();
+        return medias_constants_1.VIDEO_EXTENSIONS.includes(ext);
+    }
     getMimeType(ext) {
         return medias_constants_1.MIME_TYPES[ext.toLowerCase()] || 'application/octet-stream';
     }
@@ -98,6 +102,13 @@ let MediasValidationService = class MediasValidationService {
         const baseName = path.basename(fileName, ext);
         const dirName = path.dirname(fileName);
         return dirName === '.' ? `${baseName}-${size}${outputExt}` : `${dirName}/${baseName}-${size}${outputExt}`;
+    }
+    buildThumbnailFileName(fileName, size, outputExt) {
+        const ext = path.extname(fileName);
+        const baseName = path.basename(fileName, ext);
+        const dirName = path.dirname(fileName);
+        const thumbName = `${baseName}-${medias_constants_1.THUMBNAIL_FILENAME_INFIX}-${size}${outputExt}`;
+        return dirName === '.' ? thumbName : `${dirName}/${thumbName}`;
     }
     getExtension(fileName) {
         return path.extname(fileName);

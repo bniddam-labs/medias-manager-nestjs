@@ -39,4 +39,8 @@ export declare const S3_METADATA_KEYS: {
     readonly ORIGINAL_NAME: "x-amz-meta-original-name";
     readonly UPLOADED_AT: "x-amz-meta-uploaded-at";
 };
+export declare const DEFAULT_THUMBNAIL_TIMESTAMP_PERCENT = 10;
+export declare const PERCENTAGE_DIVISOR = 100;
+export declare const THUMBNAIL_FILENAME_INFIX = "thumb";
+export declare const FFMPEG_FRAME_COUNT = 1;
 //# sourceMappingURL=medias.constants.d.ts.map

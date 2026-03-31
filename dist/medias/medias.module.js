@@ -14,7 +14,7 @@ const medias_constants_1 = require("./medias.constants");
 const medias_controller_1 = require("./medias.controller");
 const medias_service_1 = require("./medias.service");
 const services_1 = require("./services");
-const INTERNAL_SERVICES = [services_1.MediasLoggerService, services_1.MediasStorageService, services_1.MediasValidationService, services_1.MediasResizeService];
+const INTERNAL_SERVICES = [services_1.MediasLoggerService, services_1.MediasStorageService, services_1.MediasValidationService, services_1.MediasResizeService, services_1.MediasVideoService];
 let MediasModule = MediasModule_1 = class MediasModule {
     static forRoot(options) {
         const controllers = options.registerController ? [medias_controller_1.MediasController] : [];

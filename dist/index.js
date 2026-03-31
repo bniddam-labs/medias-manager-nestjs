@@ -1,6 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.MediasService = exports.MediasModule = exports.MediasController = exports.VIDEO_EXTENSIONS = exports.TRANSIENT_S3_ERROR_CODES = exports.SIZE_UNITS = exports.S3_METADATA_KEYS = exports.RETRY_CONFIG = exports.RESIZABLE_IMAGE_EXTENSIONS = exports.MIME_TYPES = exports.MEDIAS_MODULE_OPTIONS = exports.MAX_RESIZE_WIDTH_LIMIT = exports.MAX_FILENAME_LENGTH = exports.IMAGE_QUALITY = exports.IMAGE_EXTENSIONS = exports.HTTP_STATUS = exports.FORMAT_PRIORITY = exports.DOCUMENT_EXTENSIONS = exports.DEFAULT_MAX_RESIZE_WIDTH = exports.DEFAULT_MAX_ORIGINAL_FILE_SIZE = exports.AUDIO_EXTENSIONS = exports.ARCHIVE_EXTENSIONS = exports.ALL_MEDIA_EXTENSIONS = exports.GetMediaQueryDto = exports.GetMediaParamsLooseDto = exports.GetMediaParamsDto = exports.createGetMediaParamsSchema = exports.DeleteMediaParamsLooseDto = exports.DeleteMediaParamsDto = exports.createDeleteMediaParamsSchema = void 0;
+exports.MediasService = exports.MediasModule = exports.MediasController = exports.VIDEO_EXTENSIONS = exports.TRANSIENT_S3_ERROR_CODES = exports.THUMBNAIL_FILENAME_INFIX = exports.SIZE_UNITS = exports.S3_METADATA_KEYS = exports.RETRY_CONFIG = exports.RESIZABLE_IMAGE_EXTENSIONS = exports.PERCENTAGE_DIVISOR = exports.MIME_TYPES = exports.MEDIAS_MODULE_OPTIONS = exports.MAX_RESIZE_WIDTH_LIMIT = exports.MAX_FILENAME_LENGTH = exports.IMAGE_QUALITY = exports.IMAGE_EXTENSIONS = exports.HTTP_STATUS = exports.FORMAT_PRIORITY = exports.FFMPEG_FRAME_COUNT = exports.DOCUMENT_EXTENSIONS = exports.DEFAULT_THUMBNAIL_TIMESTAMP_PERCENT = exports.DEFAULT_MAX_RESIZE_WIDTH = exports.DEFAULT_MAX_ORIGINAL_FILE_SIZE = exports.AUDIO_EXTENSIONS = exports.ARCHIVE_EXTENSIONS = exports.ALL_MEDIA_EXTENSIONS = exports.GetMediaQueryDto = exports.GetMediaParamsLooseDto = exports.GetMediaParamsDto = exports.createGetMediaParamsSchema = exports.DeleteMediaParamsLooseDto = exports.DeleteMediaParamsDto = exports.createDeleteMediaParamsSchema = void 0;
 var delete_media_dto_1 = require("./medias/dto/delete-media.dto");
 Object.defineProperty(exports, "createDeleteMediaParamsSchema", { enumerable: true, get: function () { return delete_media_dto_1.createDeleteMediaParamsSchema; } });
 Object.defineProperty(exports, "DeleteMediaParamsDto", { enumerable: true, get: function () { return delete_media_dto_1.DeleteMediaParamsDto; } });
@@ -16,7 +16,9 @@ Object.defineProperty(exports, "ARCHIVE_EXTENSIONS", { enumerable: true, get: fu
 Object.defineProperty(exports, "AUDIO_EXTENSIONS", { enumerable: true, get: function () { return medias_constants_1.AUDIO_EXTENSIONS; } });
 Object.defineProperty(exports, "DEFAULT_MAX_ORIGINAL_FILE_SIZE", { enumerable: true, get: function () { return medias_constants_1.DEFAULT_MAX_ORIGINAL_FILE_SIZE; } });
 Object.defineProperty(exports, "DEFAULT_MAX_RESIZE_WIDTH", { enumerable: true, get: function () { return medias_constants_1.DEFAULT_MAX_RESIZE_WIDTH; } });
+Object.defineProperty(exports, "DEFAULT_THUMBNAIL_TIMESTAMP_PERCENT", { enumerable: true, get: function () { return medias_constants_1.DEFAULT_THUMBNAIL_TIMESTAMP_PERCENT; } });
 Object.defineProperty(exports, "DOCUMENT_EXTENSIONS", { enumerable: true, get: function () { return medias_constants_1.DOCUMENT_EXTENSIONS; } });
+Object.defineProperty(exports, "FFMPEG_FRAME_COUNT", { enumerable: true, get: function () { return medias_constants_1.FFMPEG_FRAME_COUNT; } });
 Object.defineProperty(exports, "FORMAT_PRIORITY", { enumerable: true, get: function () { return medias_constants_1.FORMAT_PRIORITY; } });
 Object.defineProperty(exports, "HTTP_STATUS", { enumerable: true, get: function () { return medias_constants_1.HTTP_STATUS; } });
 Object.defineProperty(exports, "IMAGE_EXTENSIONS", { enumerable: true, get: function () { return medias_constants_1.IMAGE_EXTENSIONS; } });
@@ -25,10 +27,12 @@ Object.defineProperty(exports, "MAX_FILENAME_LENGTH", { enumerable: true, get: f
 Object.defineProperty(exports, "MAX_RESIZE_WIDTH_LIMIT", { enumerable: true, get: function () { return medias_constants_1.MAX_RESIZE_WIDTH_LIMIT; } });
 Object.defineProperty(exports, "MEDIAS_MODULE_OPTIONS", { enumerable: true, get: function () { return medias_constants_1.MEDIAS_MODULE_OPTIONS; } });
 Object.defineProperty(exports, "MIME_TYPES", { enumerable: true, get: function () { return medias_constants_1.MIME_TYPES; } });
+Object.defineProperty(exports, "PERCENTAGE_DIVISOR", { enumerable: true, get: function () { return medias_constants_1.PERCENTAGE_DIVISOR; } });
 Object.defineProperty(exports, "RESIZABLE_IMAGE_EXTENSIONS", { enumerable: true, get: function () { return medias_constants_1.RESIZABLE_IMAGE_EXTENSIONS; } });
 Object.defineProperty(exports, "RETRY_CONFIG", { enumerable: true, get: function () { return medias_constants_1.RETRY_CONFIG; } });
 Object.defineProperty(exports, "S3_METADATA_KEYS", { enumerable: true, get: function () { return medias_constants_1.S3_METADATA_KEYS; } });
 Object.defineProperty(exports, "SIZE_UNITS", { enumerable: true, get: function () { return medias_constants_1.SIZE_UNITS; } });
+Object.defineProperty(exports, "THUMBNAIL_FILENAME_INFIX", { enumerable: true, get: function () { return medias_constants_1.THUMBNAIL_FILENAME_INFIX; } });
 Object.defineProperty(exports, "TRANSIENT_S3_ERROR_CODES", { enumerable: true, get: function () { return medias_constants_1.TRANSIENT_S3_ERROR_CODES; } });
 Object.defineProperty(exports, "VIDEO_EXTENSIONS", { enumerable: true, get: function () { return medias_constants_1.VIDEO_EXTENSIONS; } });
 var medias_controller_1 = require("./medias/medias.controller");
