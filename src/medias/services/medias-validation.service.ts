@@ -2,7 +2,7 @@ import * as crypto from 'node:crypto';
 import * as path from 'node:path';
 import { BadRequestException, Inject, Injectable } from '@nestjs/common';
 import { MediasModuleOptions } from '../interfaces/medias-module-options.interface';
-import { DEFAULT_MAX_RESIZE_WIDTH, IMAGE_EXTENSIONS, MEDIAS_MODULE_OPTIONS, MIME_TYPES, RESIZABLE_IMAGE_EXTENSIONS } from '../medias.constants';
+import { DEFAULT_MAX_RESIZE_WIDTH, IMAGE_EXTENSIONS, MEDIAS_MODULE_OPTIONS, MIME_TYPES, RESIZABLE_IMAGE_EXTENSIONS, THUMBNAIL_FILENAME_INFIX, VIDEO_EXTENSIONS } from '../medias.constants';
 import { MediasLoggerService } from './medias-logger.service';
 
 /**
@@ -35,6 +35,14 @@ export class MediasValidationService {
   isResizable(fileName: string): boolean {
     const ext = path.extname(fileName).toLowerCase();
     return RESIZABLE_IMAGE_EXTENSIONS.includes(ext);
+  }
+
+  /**
+   * Check if file is a video based on extension
+   */
+  isVideo(fileName: string): boolean {
+    const ext = path.extname(fileName).toLowerCase();
+    return VIDEO_EXTENSIONS.includes(ext);
   }
 
   /**
@@ -108,6 +116,18 @@ export class MediasValidationService {
     const baseName = path.basename(fileName, ext);
     const dirName = path.dirname(fileName);
     return dirName === '.' ? `${baseName}-${size}${outputExt}` : `${dirName}/${baseName}-${size}${outputExt}`;
+  }
+
+  /**
+   * Build thumbnail file name from original video file
+   * Pattern: {dir}/{baseName}-thumb-{size}{outputExt}
+   */
+  buildThumbnailFileName(fileName: string, size: number, outputExt: string): string {
+    const ext = path.extname(fileName);
+    const baseName = path.basename(fileName, ext);
+    const dirName = path.dirname(fileName);
+    const thumbName = `${baseName}-${THUMBNAIL_FILENAME_INFIX}-${size}${outputExt}`;
+    return dirName === '.' ? thumbName : `${dirName}/${thumbName}`;
   }
 
   /**
