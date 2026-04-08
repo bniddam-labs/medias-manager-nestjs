@@ -338,6 +338,16 @@ export class MediasService {
   }
 
   /**
+   * Get video thumbnail for a given size (get-or-generate)
+   *
+   * On first request for a size, generates the thumbnail via ffmpeg and caches it to S3.
+   * Subsequent requests for the same size are served directly from S3 (fast path).
+   */
+  async getVideoThumbnail(fileName: string, size: number, ifNoneMatch?: string): Promise<MediaBufferResponse> {
+    return this.video.getOrGenerateThumbnail(fileName, size, ifNoneMatch);
+  }
+
+  /**
    * Delete any media file from S3
    */
   async deleteMedia(fileName: string): Promise<void> {

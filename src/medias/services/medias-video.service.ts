@@ -1,9 +1,10 @@
 import * as fs from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
-import { Inject, Injectable, OnModuleInit } from '@nestjs/common';
+import { BadRequestException, Inject, Injectable, OnModuleInit } from '@nestjs/common';
 import ffmpeg from 'fluent-ffmpeg';
 import sharp from 'sharp';
+import { MediaBufferResponse } from './medias-resize.service';
 import { MediasModuleOptions } from '../interfaces/medias-module-options.interface';
 import { DEFAULT_THUMBNAIL_TIMESTAMP_PERCENT, FFMPEG_FRAME_COUNT, IMAGE_QUALITY, ImageFormat, MEDIAS_MODULE_OPTIONS, PERCENTAGE_DIVISOR } from '../medias.constants';
 import { MediasLoggerService } from './medias-logger.service';
@@ -191,6 +192,103 @@ export class MediasVideoService implements OnModuleInit {
       default:
         return '.jpg';
     }
+  }
+
+  /**
+   * Get video thumbnail for a given size, generating and caching it on first request.
+   * Subsequent requests for the same size are served directly from S3.
+   */
+  async getOrGenerateThumbnail(fileName: string, size: number, ifNoneMatch?: string): Promise<MediaBufferResponse> {
+    if (!this.ffmpegAvailable) {
+      throw new BadRequestException('Video thumbnail generation requires ffmpeg. Please ensure ffmpeg is installed on the system.');
+    }
+
+    const outputFormat = this.options.preferredFormat ?? 'original';
+    const outputExt = this.getExtensionForFormat(outputFormat);
+    const thumbnailFileName = this.validation.buildThumbnailFileName(fileName, size, outputExt);
+    const mimeType = this.validation.getMimeType(outputExt);
+
+    // Try to serve from cache
+    try {
+      const stat = await this.storage.getFileStat(thumbnailFileName);
+      const etag = this.validation.generateETag(thumbnailFileName, stat.lastModified, stat.size);
+
+      if (ifNoneMatch === etag) {
+        this.logger.debug('Video thumbnail cache hit (304)', { thumbnailFileName });
+        return { buffer: null as unknown as Buffer, mimeType, etag, notModified: true };
+      }
+
+      this.logger.debug('Video thumbnail cache hit', { thumbnailFileName });
+      const buffer = await this.storage.getFile(thumbnailFileName);
+      return { buffer, mimeType, etag, notModified: false };
+    } catch {
+      this.logger.debug('Video thumbnail not cached, generating on-the-fly', { thumbnailFileName });
+    }
+
+    // Validate size
+    this.validation.validateResizeSize(fileName, size);
+
+    const startTime = Date.now();
+
+    this.logger.info('Generating video thumbnail on-the-fly', { fileName, size });
+
+    // Fetch video buffer from S3
+    const videoBuffer = await this.storage.getFile(fileName);
+
+    // Probe duration and extract frame
+    const duration = await this.getVideoDuration(videoBuffer);
+    const timestamp = this.parseTimestamp(this.options.videoThumbnails?.thumbnailTimestamp, duration);
+    const frameBuffer = await this.extractFrame(videoBuffer, timestamp);
+
+    // Determine final size (upscale prevention)
+    let finalSize = size;
+
+    if (this.validation.isAutoPreventUpscaleEnabled()) {
+      try {
+        const frameMetadata = await sharp(frameBuffer).metadata();
+        if (frameMetadata.width && size > frameMetadata.width) {
+          finalSize = frameMetadata.width;
+          this.logger.debug('Clamped thumbnail size to prevent upscale', {
+            fileName,
+            requestedSize: size,
+            frameWidth: frameMetadata.width,
+          });
+        }
+      } catch (error) {
+        this.logger.warn('Failed to check frame dimensions for upscale prevention', {
+          fileName,
+          error: error instanceof Error ? error.message : 'Unknown error',
+        });
+      }
+    }
+
+    // Resize and convert
+    let pipeline = sharp(frameBuffer).resize(finalSize);
+    pipeline = this.applyFormat(pipeline, outputFormat);
+    const thumbnailBuffer = await pipeline.toBuffer();
+
+    const durationMs = Date.now() - startTime;
+
+    // Cache to S3 (fire-and-forget)
+    this.storage.putFile(thumbnailFileName, thumbnailBuffer).then(() => {
+      this.logger.info('Video thumbnail cached to S3', { thumbnailFileName });
+      this.options.onVideoThumbnailGenerated?.({
+        originalFileName: fileName,
+        thumbnailFileName,
+        requestedSize: size,
+        durationMs,
+        format: outputFormat,
+      });
+    }).catch((error: unknown) => {
+      this.logger.error('Failed to cache video thumbnail to S3', {
+        thumbnailFileName,
+        error: error instanceof Error ? error.message : 'Unknown error',
+      });
+    });
+
+    const etag = this.validation.generateETagFromBuffer(thumbnailBuffer);
+    this.logger.info('Video thumbnail generated on-the-fly', { fileName, size, thumbnailFileName, durationMs });
+    return { buffer: thumbnailBuffer, mimeType, etag, notModified: false };
   }
 
   async generateThumbnailsInline(fileName: string, videoBuffer: Buffer, sizes: number[], thumbnailTimestamp?: number | string): Promise<void> {

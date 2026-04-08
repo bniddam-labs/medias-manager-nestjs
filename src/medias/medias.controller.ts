@@ -1,3 +1,4 @@
+
 import { BadRequestException, Controller, Delete, Get, InternalServerErrorException, Logger, NotFoundException, Param, Query, Req, Res } from '@nestjs/common';
 import { Request, Response } from 'express';
 import { DeleteMediaParamsLooseDto } from './dto/delete-media.dto';
@@ -25,6 +26,32 @@ export class MediasController {
       // If size is requested, attempt to resize (only works for images)
       if (size && parseInt(size, 10) > 0) {
         const requestedSize = parseInt(size, 10);
+
+        // Video: serve thumbnail (get-or-generate, cached to S3)
+        if (this.mediasService.isVideo(fileName)) {
+          const result = await this.mediasService.getVideoThumbnail(fileName, requestedSize, ifNoneMatch);
+
+          const duration = Date.now() - startTime;
+
+          if (result.notModified) {
+            res.setHeader('X-Processing-Time', `${duration}ms`);
+            res.setHeader('X-Cache', 'HIT');
+            res.setHeader('X-Resize', 'yes');
+            res.status(HTTP_STATUS.NOT_MODIFIED).end();
+            return;
+          }
+
+          res.setHeader('X-Processing-Time', `${duration}ms`);
+          res.setHeader('X-Cache', 'MISS');
+          res.setHeader('X-Resize', 'yes');
+          res.setHeader('Content-Type', result.mimeType);
+          res.setHeader('Content-Length', result.buffer.length);
+          res.setHeader('Content-Disposition', `inline; filename="${fileName}"`);
+          res.setHeader('ETag', result.etag);
+          res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+          res.send(result.buffer);
+          return;
+        }
 
         // Check if file is resizable before attempting
         if (!this.mediasService.isResizable(fileName)) {
