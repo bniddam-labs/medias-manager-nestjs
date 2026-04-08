@@ -298,6 +298,33 @@ if (mediasService.isResizable('video.mp4')) {
 }
 ```
 
+### 🎬 Video Thumbnails On-Demand
+
+Videos support thumbnail generation via the `?size=` parameter, using the same API as image resizing:
+
+```
+GET /medias/clip.mp4?size=400  → returns clip-thumb-400.webp (thumbnail image)
+GET /medias/clip.mp4           → streams the original video
+```
+
+The thumbnail is generated on first request (via ffmpeg) and cached to S3. Subsequent requests are served directly from cache.
+
+```typescript
+// In your custom controller
+@Get(':id')
+async getMedia(@Param('id') id: string, @Query('size') size?: string) {
+  if (size && this.mediasService.isVideo(id)) {
+    // Returns the thumbnail image at the requested size
+    return this.mediasService.getVideoThumbnail(id, parseInt(size));
+  }
+  // ...
+}
+```
+
+The thumbnail filename is deterministic: `{baseName}-thumb-{size}.{ext}` (e.g., `clip-thumb-400.webp`), so no need to store it in your database — just request it with the original video name and size.
+
+> **Requires ffmpeg** to be installed on the host system.
+
 ### 🚀 Pre-generation at Upload
 
 Reduce latency by generating common image sizes at upload time instead of on first request:

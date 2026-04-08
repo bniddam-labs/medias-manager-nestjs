@@ -121,6 +121,10 @@ pnpm run prepublishOnly
 - **Event hook**: `onVideoThumbnailGenerated(event)` fires per generated thumbnail
   - Includes: originalFileName, thumbnailFileName, requestedSize, durationMs, format
 - **Requires**: `fluent-ffmpeg` (bundled dependency) + ffmpeg binary on host system
+- **On-demand thumbnail via `?size=`**: `GET /medias/clip.mp4?size=400` serves `clip-thumb-400.webp`
+  - Checks S3 cache first (fast path); generates via ffmpeg on cache miss (slow, one-time)
+  - `GET /medias/clip.mp4` (no size) still streams the original video
+  - No need to store thumbnail filenames in DB — name is deterministic from video name + size
 
 **Dependency Injection**
 - Configuration injected via `MEDIAS_MODULE_OPTIONS` token
@@ -134,8 +138,11 @@ pnpm run prepublishOnly
 **Request Flow**
 1. GET `/medias/:fileName?size=<width>` - Request with optional size parameter
 2. DTOs validate input (Zod-based validation in src/medias/dto/)
-3. Controller extracts request data and calls appropriate service method
-4. Service handles all business logic (caching, ETags, MIME types, Sharp processing)
+3. Controller extracts request data and calls appropriate service method:
+   - Video + size → `getVideoThumbnail` (returns thumbnail image)
+   - Image + size → `getResizedImage` (returns resized image)
+   - Any file, no size → `getMediaStream` (streams original file)
+4. Service handles all business logic (caching, ETags, MIME types, Sharp/ffmpeg processing)
 5. Controller sets HTTP headers and sends response
 
 **MediasService - Business Logic Layer** (src/medias/medias.service.ts)
@@ -156,6 +163,14 @@ The service provides all media processing logic that consumers can use in custom
   - Applies format conversion (WebP, AVIF, JPEG, or original)
   - Uploads resized version to S3 asynchronously (fire-and-forget)
   - ETag generation from buffer content
+  - 304 Not Modified support
+  - Returns: `{ buffer, mimeType, etag, notModified }`
+
+- `getVideoThumbnail(fileName, size, ifNoneMatch?)`: Get-or-generate video thumbnail with:
+  - Checks S3 for cached thumbnail (`clip-thumb-400.webp`) first
+  - On cache miss: fetches video, extracts frame via ffmpeg, resizes with Sharp, caches to S3
+  - Respects maxResizeWidth, autoPreventUpscale, preferredFormat
+  - Fires `onVideoThumbnailGenerated` hook after first generation
   - 304 Not Modified support
   - Returns: `{ buffer, mimeType, etag, notModified }`
 
