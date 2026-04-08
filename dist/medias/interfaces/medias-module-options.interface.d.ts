@@ -39,6 +39,12 @@ export interface VideoThumbnailGeneratedEvent {
     durationMs: number;
     format: ImageFormat;
 }
+export interface ProcessingCompletedEvent {
+    originalFileName: string;
+    type: 'image-variants' | 'video-thumbnails';
+    generatedFiles: string[];
+    totalDurationMs: number;
+}
 export interface PreGenerateJob {
     fileName: string;
     sizes: number[];
@@ -76,6 +82,7 @@ export interface MediasModuleOptions {
     preGeneration?: MediasPreGenerationOptions;
     videoThumbnails?: VideoThumbnailOptions;
     onVideoThumbnailGenerated?: (event: VideoThumbnailGeneratedEvent) => void;
+    onProcessingCompleted?: (event: ProcessingCompletedEvent) => void;
     strictFilenameValidation?: boolean;
 }
 export interface MediasModuleOptionsFactory {

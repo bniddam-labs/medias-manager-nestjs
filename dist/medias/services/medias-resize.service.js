@@ -298,16 +298,28 @@ let MediasResizeService = class MediasResizeService {
             return;
         }
         const outputFormat = this.options.preferredFormat ?? 'original';
+        const startTime = Date.now();
         this.logger.info('Starting pre-generation of image variants', {
             fileName,
             sizes,
             outputFormat,
             originalWidth,
         });
+        const generatedFiles = [];
         for (const size of sizes) {
-            await this.generateVariant(fileName, buffer, size, originalWidth);
+            const result = await this.generateVariant(fileName, buffer, size, originalWidth);
+            if (result.success) {
+                generatedFiles.push(result.resizedFileName);
+            }
         }
-        this.logger.info('Pre-generation completed', { fileName, totalSizes: sizes.length });
+        const totalDurationMs = Date.now() - startTime;
+        this.logger.info('Pre-generation completed', { fileName, totalSizes: sizes.length, generatedFiles: generatedFiles.length });
+        this.options.onProcessingCompleted?.({
+            originalFileName: fileName,
+            type: 'image-variants',
+            generatedFiles,
+            totalDurationMs,
+        });
     }
     async batchResize(items) {
         this.logger.info('Starting batch resize operation', {

@@ -323,6 +323,7 @@ let MediasVideoService = class MediasVideoService {
                 });
             }
         }
+        const generatedFiles = [];
         for (const size of sizes) {
             const thumbnailStartTime = Date.now();
             const thumbnailFileName = this.validation.buildThumbnailFileName(fileName, size, outputExt);
@@ -363,6 +364,7 @@ let MediasVideoService = class MediasVideoService {
                     durationMs,
                     format: outputFormat,
                 });
+                generatedFiles.push(thumbnailFileName);
             }
             catch (error) {
                 this.logger.error('Failed to generate video thumbnail', {
@@ -377,6 +379,12 @@ let MediasVideoService = class MediasVideoService {
         this.logger.info('Video thumbnail generation completed', {
             fileName,
             totalSizes: sizes.length,
+            totalDurationMs: totalDuration,
+        });
+        this.options.onProcessingCompleted?.({
+            originalFileName: fileName,
+            type: 'video-thumbnails',
+            generatedFiles,
             totalDurationMs: totalDuration,
         });
     }
