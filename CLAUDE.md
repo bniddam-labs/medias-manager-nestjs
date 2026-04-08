@@ -631,3 +631,4 @@ For library usage questions, consumers should refer to:
 
 - [2026-03-31] When upgrading TypeScript to v6+, `export class Dto extends createZodDto(schema) {}` fails with TS2883. Fix by extracting to an intermediate const with explicit `ZodDto` type annotation: `const Base: ZodDto<typeof Schema> = createZodDto(Schema); export class Dto extends Base {}`.
 - [2026-03-31] When adding new media processing features that parallel existing ones (e.g., video thumbnails mirroring image resize), always carry over all protection/validation mechanisms (maxResizeWidth, autoPreventUpscale, maxOriginalFileSize) from the original feature — verify they are actually enforced in the new code path.
+- [2026-04-08] When `?size=` is requested for a video file, the controller routes to `getVideoThumbnail` instead of throwing `BadRequestException`. Controller tests for the resize-rejection path must use a non-video, non-image file (e.g., `document.pdf`) — not `video.mp4`.
