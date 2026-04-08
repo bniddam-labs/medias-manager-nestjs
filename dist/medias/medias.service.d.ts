@@ -2,6 +2,13 @@ import { Readable } from 'node:stream';
 import { MediasModuleOptions } from './interfaces/medias-module-options.interface';
 import { ImageFormat } from './medias.constants';
 import { BatchResizeRequestItem, BatchResizeResultItem, MediaBufferResponse, MediaStatResult, MediaStreamResponse, MediasLoggerService, MediasResizeService, MediasStorageService, MediasValidationService, MediasVideoService } from './services';
+export interface MediaRangeStreamResponse {
+    stream: Readable;
+    mimeType: string;
+    start: number;
+    end: number;
+    totalSize: number;
+}
 export { BatchResizeRequestItem, BatchResizeResultItem, MediaBufferResponse, MediaStatResult, MediaStreamResponse };
 export declare class MediasService {
     private readonly options;
@@ -19,6 +26,7 @@ export declare class MediasService {
     generateETagFromBuffer(buffer: Buffer): string;
     negotiateFormat(acceptHeader?: string): ImageFormat;
     getMediaStream(fileName: string, ifNoneMatch?: string): Promise<MediaStreamResponse>;
+    getMediaStreamRange(fileName: string, start: number, end?: number): Promise<MediaRangeStreamResponse>;
     getMedia(fileName: string): Promise<Buffer>;
     getMediaFileStream(fileName: string): Promise<Readable>;
     getMediaStat(fileName: string): Promise<MediaStatResult>;

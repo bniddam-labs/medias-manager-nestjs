@@ -91,6 +91,18 @@ let MediasStorageService = class MediasStorageService {
             throw new common_1.NotFoundException(`File with name ${fileName} not found`);
         }
     }
+    async getFileStreamPartial(fileName, offset, length) {
+        this.logger.verbose('Fetching partial file stream from S3', { fileName, offset, length });
+        try {
+            const stream = await this.withRetry(() => this.minioService.client.getPartialObject(this.getBucketName(), fileName, offset, length), { operationName: 'getPartialObject', fileName });
+            this.logger.verbose('Partial file stream obtained', { fileName, offset, length });
+            return stream;
+        }
+        catch (error) {
+            this.logger.error('Partial file stream not found in S3', { fileName, error: error instanceof Error ? error.message : 'Unknown error' });
+            throw new common_1.NotFoundException(`File with name ${fileName} not found`);
+        }
+    }
     async getFile(fileName) {
         this.logger.verbose('Loading file into buffer', { fileName });
         try {

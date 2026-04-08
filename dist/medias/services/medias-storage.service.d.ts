@@ -21,6 +21,7 @@ export declare class MediasStorageService {
         fileName?: string;
     }): Promise<T>;
     getFileStream(fileName: string): Promise<Readable>;
+    getFileStreamPartial(fileName: string, offset: number, length: number): Promise<Readable>;
     getFile(fileName: string): Promise<Buffer>;
     getFileStat(fileName: string): Promise<MediaStatResult>;
     putFile(fileName: string, file: Buffer, metadata?: Record<string, string>): Promise<void>;

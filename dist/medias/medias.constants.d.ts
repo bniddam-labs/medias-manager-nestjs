@@ -16,6 +16,7 @@ export declare const SIZE_UNITS: {
 export declare const MAX_FILENAME_LENGTH = 255;
 export declare const MAX_RESIZE_WIDTH_LIMIT = 5000;
 export declare const HTTP_STATUS: {
+    readonly PARTIAL_CONTENT: 206;
     readonly NOT_MODIFIED: 304;
     readonly INTERNAL_SERVER_ERROR: 500;
 };

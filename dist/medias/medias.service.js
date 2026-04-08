@@ -84,6 +84,22 @@ let MediasService = class MediasService {
             notModified: false,
         };
     }
+    async getMediaStreamRange(fileName, start, end) {
+        this.logger.verbose('getMediaStreamRange called', { fileName, start, end });
+        const ext = this.validation.getExtension(fileName);
+        const mimeType = this.validation.getMimeType(ext);
+        const stat = await this.storage.getFileStat(fileName);
+        const totalSize = stat.size;
+        const resolvedEnd = end !== undefined ? Math.min(end, totalSize - 1) : totalSize - 1;
+        if (start < 0 || start >= totalSize || start > resolvedEnd) {
+            this.logger.warn('Invalid range request', { fileName, start, end: resolvedEnd, totalSize });
+            throw new common_1.BadRequestException(`Range not satisfiable: bytes ${start}-${resolvedEnd}/${totalSize}`);
+        }
+        const length = resolvedEnd - start + 1;
+        const stream = await this.storage.getFileStreamPartial(fileName, start, length);
+        this.logger.info('Serving partial media stream', { fileName, start, end: resolvedEnd, totalSize, length });
+        return { stream, mimeType, start, end: resolvedEnd, totalSize };
+    }
     async getMedia(fileName) {
         this.logger.warn('Loading entire file into memory', { fileName });
         return this.storage.getFile(fileName);
