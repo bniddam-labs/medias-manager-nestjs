@@ -1,4 +1,5 @@
 import { OnModuleInit } from '@nestjs/common';
+import { MediaBufferResponse } from './medias-resize.service';
 import { MediasModuleOptions } from '../interfaces/medias-module-options.interface';
 import { MediasLoggerService } from './medias-logger.service';
 import { MediasStorageService } from './medias-storage.service';
@@ -21,6 +22,7 @@ export declare class MediasVideoService implements OnModuleInit {
     private extractFrameAtTimestamp;
     private applyFormat;
     private getExtensionForFormat;
+    getOrGenerateThumbnail(fileName: string, size: number, ifNoneMatch?: string): Promise<MediaBufferResponse>;
     generateThumbnailsInline(fileName: string, videoBuffer: Buffer, sizes: number[], thumbnailTimestamp?: number | string): Promise<void>;
 }
 //# sourceMappingURL=medias-video.service.d.ts.map

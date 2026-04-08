@@ -245,6 +245,9 @@ let MediasService = class MediasService {
             });
         }
     }
+    async getVideoThumbnail(fileName, size, ifNoneMatch) {
+        return this.video.getOrGenerateThumbnail(fileName, size, ifNoneMatch);
+    }
     async deleteMedia(fileName) {
         return this.storage.deleteFile(fileName);
     }

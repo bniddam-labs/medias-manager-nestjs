@@ -195,6 +195,78 @@ let MediasVideoService = class MediasVideoService {
                 return '.jpg';
         }
     }
+    async getOrGenerateThumbnail(fileName, size, ifNoneMatch) {
+        if (!this.ffmpegAvailable) {
+            throw new common_1.BadRequestException('Video thumbnail generation requires ffmpeg. Please ensure ffmpeg is installed on the system.');
+        }
+        const outputFormat = this.options.preferredFormat ?? 'original';
+        const outputExt = this.getExtensionForFormat(outputFormat);
+        const thumbnailFileName = this.validation.buildThumbnailFileName(fileName, size, outputExt);
+        const mimeType = this.validation.getMimeType(outputExt);
+        try {
+            const stat = await this.storage.getFileStat(thumbnailFileName);
+            const etag = this.validation.generateETag(thumbnailFileName, stat.lastModified, stat.size);
+            if (ifNoneMatch === etag) {
+                this.logger.debug('Video thumbnail cache hit (304)', { thumbnailFileName });
+                return { buffer: null, mimeType, etag, notModified: true };
+            }
+            this.logger.debug('Video thumbnail cache hit', { thumbnailFileName });
+            const buffer = await this.storage.getFile(thumbnailFileName);
+            return { buffer, mimeType, etag, notModified: false };
+        }
+        catch {
+            this.logger.debug('Video thumbnail not cached, generating on-the-fly', { thumbnailFileName });
+        }
+        this.validation.validateResizeSize(fileName, size);
+        const startTime = Date.now();
+        this.logger.info('Generating video thumbnail on-the-fly', { fileName, size });
+        const videoBuffer = await this.storage.getFile(fileName);
+        const duration = await this.getVideoDuration(videoBuffer);
+        const timestamp = this.parseTimestamp(this.options.videoThumbnails?.thumbnailTimestamp, duration);
+        const frameBuffer = await this.extractFrame(videoBuffer, timestamp);
+        let finalSize = size;
+        if (this.validation.isAutoPreventUpscaleEnabled()) {
+            try {
+                const frameMetadata = await (0, sharp_1.default)(frameBuffer).metadata();
+                if (frameMetadata.width && size > frameMetadata.width) {
+                    finalSize = frameMetadata.width;
+                    this.logger.debug('Clamped thumbnail size to prevent upscale', {
+                        fileName,
+                        requestedSize: size,
+                        frameWidth: frameMetadata.width,
+                    });
+                }
+            }
+            catch (error) {
+                this.logger.warn('Failed to check frame dimensions for upscale prevention', {
+                    fileName,
+                    error: error instanceof Error ? error.message : 'Unknown error',
+                });
+            }
+        }
+        let pipeline = (0, sharp_1.default)(frameBuffer).resize(finalSize);
+        pipeline = this.applyFormat(pipeline, outputFormat);
+        const thumbnailBuffer = await pipeline.toBuffer();
+        const durationMs = Date.now() - startTime;
+        this.storage.putFile(thumbnailFileName, thumbnailBuffer).then(() => {
+            this.logger.info('Video thumbnail cached to S3', { thumbnailFileName });
+            this.options.onVideoThumbnailGenerated?.({
+                originalFileName: fileName,
+                thumbnailFileName,
+                requestedSize: size,
+                durationMs,
+                format: outputFormat,
+            });
+        }).catch((error) => {
+            this.logger.error('Failed to cache video thumbnail to S3', {
+                thumbnailFileName,
+                error: error instanceof Error ? error.message : 'Unknown error',
+            });
+        });
+        const etag = this.validation.generateETagFromBuffer(thumbnailBuffer);
+        this.logger.info('Video thumbnail generated on-the-fly', { fileName, size, thumbnailFileName, durationMs });
+        return { buffer: thumbnailBuffer, mimeType, etag, notModified: false };
+    }
     async generateThumbnailsInline(fileName, videoBuffer, sizes, thumbnailTimestamp) {
         if (!this.ffmpegAvailable) {
             this.logger.warn('ffmpeg not available, skipping video thumbnail generation', { fileName });

@@ -33,6 +33,27 @@ let MediasController = MediasController_1 = class MediasController {
         try {
             if (size && parseInt(size, 10) > 0) {
                 const requestedSize = parseInt(size, 10);
+                if (this.mediasService.isVideo(fileName)) {
+                    const result = await this.mediasService.getVideoThumbnail(fileName, requestedSize, ifNoneMatch);
+                    const duration = Date.now() - startTime;
+                    if (result.notModified) {
+                        res.setHeader('X-Processing-Time', `${duration}ms`);
+                        res.setHeader('X-Cache', 'HIT');
+                        res.setHeader('X-Resize', 'yes');
+                        res.status(medias_constants_1.HTTP_STATUS.NOT_MODIFIED).end();
+                        return;
+                    }
+                    res.setHeader('X-Processing-Time', `${duration}ms`);
+                    res.setHeader('X-Cache', 'MISS');
+                    res.setHeader('X-Resize', 'yes');
+                    res.setHeader('Content-Type', result.mimeType);
+                    res.setHeader('Content-Length', result.buffer.length);
+                    res.setHeader('Content-Disposition', `inline; filename="${fileName}"`);
+                    res.setHeader('ETag', result.etag);
+                    res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+                    res.send(result.buffer);
+                    return;
+                }
                 if (!this.mediasService.isResizable(fileName)) {
                     if (this.mediasService.isImage(fileName)) {
                         throw new common_1.BadRequestException(`This image format does not support resizing. Serve without size parameter.`);
