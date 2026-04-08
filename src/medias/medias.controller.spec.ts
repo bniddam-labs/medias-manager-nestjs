@@ -27,8 +27,10 @@ describe('MediasController', () => {
     const mockMediasService = {
       isImage: jest.fn(),
       isResizable: jest.fn(),
+      isVideo: jest.fn().mockReturnValue(false),
       getMediaStream: jest.fn(),
       getResizedImage: jest.fn(),
+      getVideoThumbnail: jest.fn(),
       deleteMedia: jest.fn(),
       negotiateFormat: jest.fn().mockReturnValue('original'),
     };
@@ -124,14 +126,34 @@ describe('MediasController', () => {
       await expect(controller.getMedia({ fileName: 'icon.svg' }, { size: '300' }, req, res)).rejects.toThrow(BadRequestException);
     });
 
-    it('should throw BadRequestException when trying to resize non-image file', async () => {
+    it('should throw BadRequestException when trying to resize non-image, non-video file', async () => {
       const res = mockResponse();
       const req = mockRequest();
 
+      mediasService.isVideo.mockReturnValue(false);
       mediasService.isResizable.mockReturnValue(false);
       mediasService.isImage.mockReturnValue(false);
 
-      await expect(controller.getMedia({ fileName: 'video.mp4' }, { size: '300' }, req, res)).rejects.toThrow(BadRequestException);
+      await expect(controller.getMedia({ fileName: 'document.pdf' }, { size: '300' }, req, res)).rejects.toThrow(BadRequestException);
+    });
+
+    it('should serve video thumbnail when size parameter is provided for a video', async () => {
+      const res = mockResponse();
+      const req = mockRequest();
+
+      mediasService.isVideo.mockReturnValue(true);
+      mediasService.getVideoThumbnail.mockResolvedValue({
+        buffer: Buffer.from('thumbnail'),
+        mimeType: 'image/webp',
+        etag: '"thumb123"',
+        notModified: false,
+      });
+
+      await controller.getMedia({ fileName: 'clip.mp4' }, { size: '400' }, req, res);
+
+      expect(mediasService.getVideoThumbnail).toHaveBeenCalledWith('clip.mp4', 400, undefined);
+      expect(res.setHeader).toHaveBeenCalledWith('Content-Type', 'image/webp');
+      expect(res.send).toHaveBeenCalled();
     });
 
     it('should handle array fileName from wildcard route', async () => {
