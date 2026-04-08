@@ -17,6 +17,7 @@ export type {
   MediasModuleOptionsFactory,
   MediasPreGenerationOptions,
   PreGenerateJob,
+  ProcessingCompletedEvent,
   S3Options,
   VideoThumbnailGeneratedEvent,
   VideoThumbnailJob,

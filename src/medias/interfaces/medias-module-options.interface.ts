@@ -61,7 +61,14 @@ export interface FileUploadedEvent {
 }
 
 /**
- * Event fired when a video thumbnail is generated
+ * Event fired when a video thumbnail is generated.
+ *
+ * Fires once **per thumbnail** — both during post-upload batch generation
+ * and on-demand requests (GET /medias/clip.mp4?size=400).
+ * Use for per-thumbnail monitoring/analytics.
+ *
+ * For a single "all thumbnails done" notification after upload,
+ * use `onProcessingCompleted` instead.
  */
 export interface VideoThumbnailGeneratedEvent {
   /** Original video file name */
@@ -74,6 +81,24 @@ export interface VideoThumbnailGeneratedEvent {
   durationMs: number;
   /** Format used for the thumbnail */
   format: ImageFormat;
+}
+
+/**
+ * Event fired once when all post-upload background processing is complete
+ * for a given file (all image variants OR all video thumbnails).
+ *
+ * Only fires in inline mode. In queue/dispatchJob mode, the library cannot
+ * know when the external worker finishes — handle completion there instead.
+ */
+export interface ProcessingCompletedEvent {
+  /** Original uploaded file name */
+  originalFileName: string;
+  /** Type of processing that was performed */
+  type: 'image-variants' | 'video-thumbnails';
+  /** Names of all successfully generated files in S3 */
+  generatedFiles: string[];
+  /** Total processing duration in milliseconds */
+  totalDurationMs: number;
 }
 
 /**
@@ -266,9 +291,15 @@ export interface MediasModuleOptions {
   allowAvif?: boolean;
 
   /**
-   * Optional: Callback fired when an image is resized
+   * Optional: Callback fired on every individual image resize operation.
    *
-   * Useful for monitoring, analytics, or custom logging.
+   * Fires once **per variant** — both for on-demand requests
+   * (GET /medias/photo.jpg?size=400) and pre-generation variants at upload.
+   * Includes cache status (fromCache: true if served from S3, false if freshly generated).
+   *
+   * Use for per-resize monitoring and analytics.
+   * NOT suitable for "upload processing complete" notifications —
+   * use `onProcessingCompleted` for that.
    */
   onImageResized?: (event: ImageResizedEvent) => void;
 
@@ -280,25 +311,36 @@ export interface MediasModuleOptions {
   onCacheHit?: (event: CacheHitEvent) => void;
 
   /**
-   * Optional: Callback fired when a file is uploaded
+   * Optional: Callback fired immediately after a file is uploaded to S3.
    *
-   * Useful for tracking uploads, updating databases, or triggering workflows.
+   * Fires before any background processing (pre-generation or video thumbnails).
+   * Use for tracking uploads or triggering workflows that don't depend on
+   * variant/thumbnail availability.
+   *
+   * For a notification after all post-upload processing is done,
+   * use `onProcessingCompleted` instead.
    */
   onUploaded?: (event: FileUploadedEvent) => void;
 
   /**
-   * Optional: Pre-generation configuration for image variants
+   * Optional: Post-upload image variant pre-generation (images only).
    *
-   * When enabled, generates specified image sizes immediately upon upload
-   * instead of waiting for the first request. This reduces latency and CPU spikes
-   * for frequently accessed images.
+   * Generates the specified sizes immediately after an image is uploaded,
+   * so they are ready in S3 before the first request. Reduces on-demand
+   * latency and CPU spikes for frequently accessed images (avatars, thumbnails).
+   *
+   * Separate from `videoThumbnails` because image variants and video thumbnails
+   * have different configuration needs (no timestamp, no ffmpeg required).
+   *
+   * Two modes:
+   * - Inline (default): fire-and-forget in the same process, non-blocking
+   * - Queue: delegate to an external worker via `dispatchJob` (Bull, BullMQ, etc.)
    *
    * Example:
    * ```typescript
    * preGeneration: {
-   *   sizes: [200, 400, 800],  // Generate these sizes on upload
+   *   sizes: [200, 400, 800],
    *   dispatchJob: async (job) => {
-   *     // Optional: delegate to a queue (Bull, BullMQ, etc.)
    *     await imageQueue.add('resize', job);
    *   }
    * }
@@ -307,18 +349,27 @@ export interface MediasModuleOptions {
   preGeneration?: MediasPreGenerationOptions;
 
   /**
-   * Optional: Video thumbnail generation configuration
+   * Optional: Post-upload video thumbnail generation (videos only).
    *
-   * When enabled, automatically extracts a frame from uploaded videos
-   * and generates thumbnail images at the specified sizes.
+   * Extracts a frame from uploaded videos via ffmpeg and generates thumbnail
+   * images at the specified sizes. Also enables the on-demand thumbnail API:
+   * GET /medias/clip.mp4?size=400 returns the thumbnail (generated on first
+   * request if not already cached).
    *
-   * Requires ffmpeg to be installed on the system.
+   * Separate from `preGeneration` because video processing requires ffmpeg,
+   * a timestamp parameter, and produces image files from a video source.
+   *
+   * Two modes:
+   * - Inline (default): fire-and-forget in the same process, non-blocking
+   * - Queue: delegate to an external worker via `dispatchJob`
+   *
+   * Requires ffmpeg to be installed on the host system.
    *
    * Example:
    * ```typescript
    * videoThumbnails: {
    *   sizes: [200, 400, 800],
-   *   thumbnailTimestamp: '10%',  // 10% into the video
+   *   thumbnailTimestamp: '10%',
    *   dispatchJob: async (job) => {
    *     await videoQueue.add('thumbnails', job);
    *   }
@@ -328,9 +379,39 @@ export interface MediasModuleOptions {
   videoThumbnails?: VideoThumbnailOptions;
 
   /**
-   * Optional: Callback fired when a video thumbnail is generated
+   * Optional: Callback fired once per individual video thumbnail generated.
+   *
+   * Fires once **per thumbnail** — both during post-upload batch generation
+   * and on-demand requests (GET /medias/clip.mp4?size=400).
+   * Use for per-thumbnail monitoring/analytics.
+   *
+   * For a single "all thumbnails done" notification after upload,
+   * use `onProcessingCompleted` instead.
    */
   onVideoThumbnailGenerated?: (event: VideoThumbnailGeneratedEvent) => void;
+
+  /**
+   * Optional: Callback fired once when all post-upload background processing
+   * is complete for a given file.
+   *
+   * - For images with `preGeneration`: fires after all variants are generated
+   * - For videos with `videoThumbnails`: fires after all thumbnails are generated
+   *
+   * This is the right hook for WebSocket notifications, database updates, or
+   * any action that requires all variants/thumbnails to be available in S3.
+   *
+   * **Only fires in inline mode.** When using `dispatchJob`, the library cannot
+   * know when the external worker finishes — handle completion in the worker instead.
+   *
+   * Example:
+   * ```typescript
+   * onProcessingCompleted: (event) => {
+   *   // event.originalFileName, event.type, event.generatedFiles, event.totalDurationMs
+   *   gateway.emit('media-ready', { fileName: event.originalFileName });
+   * }
+   * ```
+   */
+  onProcessingCompleted?: (event: ProcessingCompletedEvent) => void;
 
   /**
    * Optional: Enable strict filename validation using whitelist (default: true)

@@ -357,6 +357,8 @@ export class MediasVideoService implements OnModuleInit {
     }
 
     // 5. Generate each thumbnail size
+    const generatedFiles: string[] = [];
+
     for (const size of sizes) {
       const thumbnailStartTime = Date.now();
       const thumbnailFileName = this.validation.buildThumbnailFileName(fileName, size, outputExt);
@@ -406,6 +408,8 @@ export class MediasVideoService implements OnModuleInit {
           durationMs,
           format: outputFormat,
         });
+
+        generatedFiles.push(thumbnailFileName);
       } catch (error) {
         this.logger.error('Failed to generate video thumbnail', {
           fileName,
@@ -420,6 +424,13 @@ export class MediasVideoService implements OnModuleInit {
     this.logger.info('Video thumbnail generation completed', {
       fileName,
       totalSizes: sizes.length,
+      totalDurationMs: totalDuration,
+    });
+
+    this.options.onProcessingCompleted?.({
+      originalFileName: fileName,
+      type: 'video-thumbnails',
+      generatedFiles,
       totalDurationMs: totalDuration,
     });
   }
