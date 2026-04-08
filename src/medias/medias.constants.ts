@@ -128,6 +128,7 @@ export const MAX_RESIZE_WIDTH_LIMIT = 5000;
  * HTTP Status Codes
  */
 export const HTTP_STATUS = {
+  PARTIAL_CONTENT: 206,
   NOT_MODIFIED: 304,
   INTERNAL_SERVER_ERROR: 500,
 } as const;

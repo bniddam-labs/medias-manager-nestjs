@@ -5,6 +5,20 @@ import { MediasModuleOptions } from './interfaces/medias-module-options.interfac
 import { ImageFormat, MEDIAS_MODULE_OPTIONS, S3_METADATA_KEYS } from './medias.constants';
 import { BatchResizeRequestItem, BatchResizeResultItem, MediaBufferResponse, MediaStatResult, MediaStreamResponse, MediasLoggerService, MediasResizeService, MediasStorageService, MediasValidationService, MediasVideoService } from './services';
 
+/**
+ * Response type for partial (range) media streaming
+ */
+export interface MediaRangeStreamResponse {
+  stream: Readable;
+  mimeType: string;
+  /** Actual start byte served */
+  start: number;
+  /** Actual end byte served */
+  end: number;
+  /** Total file size in bytes */
+  totalSize: number;
+}
+
 // Re-export types for backward compatibility
 export { BatchResizeRequestItem, BatchResizeResultItem, MediaBufferResponse, MediaStatResult, MediaStreamResponse };
 
@@ -126,6 +140,43 @@ export class MediasService {
       lastModified: stat.lastModified,
       notModified: false,
     };
+  }
+
+  /**
+   * Get a partial range of any media file as a stream (for HTTP Range requests)
+   *
+   * Use this in custom controllers to support video seeking/scrubbing in browsers.
+   * Returns a partial stream with the resolved byte range and total file size,
+   * ready to send as a 206 Partial Content response.
+   *
+   * The caller is responsible for setting the appropriate HTTP headers:
+   * - `Content-Range: bytes {start}-{end}/{totalSize}`
+   * - `Accept-Ranges: bytes`
+   * - `Content-Length: {end - start + 1}`
+   * - Status code 206
+   */
+  async getMediaStreamRange(fileName: string, start: number, end?: number): Promise<MediaRangeStreamResponse> {
+    this.logger.verbose('getMediaStreamRange called', { fileName, start, end });
+
+    const ext = this.validation.getExtension(fileName);
+    const mimeType = this.validation.getMimeType(ext);
+
+    const stat = await this.storage.getFileStat(fileName);
+    const totalSize = stat.size;
+
+    const resolvedEnd = end !== undefined ? Math.min(end, totalSize - 1) : totalSize - 1;
+
+    if (start < 0 || start >= totalSize || start > resolvedEnd) {
+      this.logger.warn('Invalid range request', { fileName, start, end: resolvedEnd, totalSize });
+      throw new BadRequestException(`Range not satisfiable: bytes ${start}-${resolvedEnd}/${totalSize}`);
+    }
+
+    const length = resolvedEnd - start + 1;
+    const stream = await this.storage.getFileStreamPartial(fileName, start, length);
+
+    this.logger.info('Serving partial media stream', { fileName, start, end: resolvedEnd, totalSize, length });
+
+    return { stream, mimeType, start, end: resolvedEnd, totalSize };
   }
 
   /**

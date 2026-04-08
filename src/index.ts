@@ -55,6 +55,6 @@ export {
 export { MediasController } from './medias/medias.controller';
 // Module
 export { MediasModule } from './medias/medias.module';
-export type { BatchResizeRequestItem, BatchResizeResultItem, MediaBufferResponse, MediaStatResult, MediaStreamResponse } from './medias/medias.service';
+export type { BatchResizeRequestItem, BatchResizeResultItem, MediaBufferResponse, MediaRangeStreamResponse, MediaStatResult, MediaStreamResponse } from './medias/medias.service';
 // Services
 export { MediasService } from './medias/medias.service';
