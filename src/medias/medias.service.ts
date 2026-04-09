@@ -438,9 +438,7 @@ export class MediasService {
       }
     }
 
-    if (this.options.onDeleted) {
-      this.options.onDeleted({ fileName, deletedVariants });
-    }
+    this.options.onDeleted?.({ fileName, deletedVariants });
   }
 
   // ============================================
