@@ -43,6 +43,7 @@ describe('MediasService', () => {
     statObject: jest.fn(),
     putObject: jest.fn(),
     removeObject: jest.fn(),
+    listObjects: jest.fn(),
   };
 
   const mockOptions = {
@@ -567,6 +568,34 @@ describe('MediasService', () => {
       await service.deleteMedia('test.pdf');
 
       expect(mockMinioClient.removeObject).toHaveBeenCalledWith('test-bucket', 'test.pdf');
+    });
+  });
+
+  const createMockListStream = (items: { name: string }[]) => {
+    const stream = new Readable({ objectMode: true, read() {} });
+    items.forEach((item) => stream.push(item));
+    stream.push(null);
+    return stream;
+  };
+
+  describe('deleteMediaWithVariants', () => {
+    it('should delete original file and its variants', async () => {
+      mockMinioClient.removeObject.mockResolvedValue({});
+      mockMinioClient.listObjects.mockReturnValue(
+        createMockListStream([
+          { name: 'photo-300.webp' },
+          { name: 'photo-800.jpg' },
+          { name: 'photo-thumb-400.webp' },
+          { name: 'photo-unrelated.webp' },
+        ]),
+      );
+
+      await service.deleteMediaWithVariants('photo.jpg');
+
+      expect(mockMinioClient.removeObject).toHaveBeenCalledWith('test-bucket', 'photo.jpg');
+      expect(mockMinioClient.removeObject).toHaveBeenCalledWith('test-bucket', 'photo-300.webp');
+      expect(mockMinioClient.removeObject).toHaveBeenCalledWith('test-bucket', 'photo-800.jpg');
+      expect(mockMinioClient.removeObject).not.toHaveBeenCalledWith('test-bucket', 'photo-unrelated.webp');
     });
   });
 
