@@ -545,6 +545,7 @@ Works great with **[@bniddam-labs/lazy-media-vuejs](https://github.com/bniddam-l
 | `getMediaStat(fileName)`                                  | Get file metadata                        |
 | `uploadMedia(fileName, buffer, originalName?)`            | Upload media to S3 (with pre-generation) |
 | `deleteMedia(fileName)`                                   | Delete media from S3                     |
+| `deleteMediaWithVariants(fileName)`                       | Delete media + all generated variants (resized images, video thumbnails) from S3 |
 | `batchResize(items)`                                      | Batch resize multiple images             |
 | `isImage(fileName)`                                       | Check if file is an image                |
 | `isResizable(fileName)`                                   | Check if file can be resized             |
@@ -579,6 +580,46 @@ if (failures.length > 0) {
 - Re-generate all thumbs after changing quality/format settings
 - Prepare all sizes for an event, collection, or catalog
 - Backoffice operations to pre-warm cache
+
+### 🔔 Event Hooks
+
+Use hooks for observability, analytics, or side effects after key operations:
+
+```typescript
+MediasModule.forRoot({
+  s3: { /* ... */ },
+  onUploaded: (event) => {
+    // event: { fileName, size, isImage, dimensions? }
+    console.log(`Uploaded: ${event.fileName}`);
+  },
+  onImageResized: (event) => {
+    // event: { originalFileName, resizedFileName, requestedSize, finalSize, fromCache, durationMs, format }
+  },
+  onCacheHit: (event) => {
+    // event: { fileName, size, notModified }
+  },
+  onVideoThumbnailGenerated: (event) => {
+    // event: { originalFileName, thumbnailFileName, requestedSize, durationMs, format }
+  },
+  onDeleted: (event) => {
+    // event: { fileName, deletedVariants: string[] }
+    // Fired by deleteMediaWithVariants() only — not by deleteMedia()
+    console.log(`Deleted ${event.fileName} + ${event.deletedVariants.length} variants`);
+  },
+});
+```
+
+All event types are exported for use in custom controllers:
+
+```typescript
+import type {
+  FileUploadedEvent,
+  ImageResizedEvent,
+  CacheHitEvent,
+  VideoThumbnailGeneratedEvent,
+  MediaDeletedEvent,
+} from '@bniddam-labs/medias-manager-nestjs';
+```
 
 ### Exported Constants
 

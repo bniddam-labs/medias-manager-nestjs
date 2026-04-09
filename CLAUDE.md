@@ -88,6 +88,9 @@ pnpm run prepublishOnly
   - Includes: fileName, size, isImage, dimensions (if image)
 - `onVideoThumbnailGenerated(event)`: Fired when a video thumbnail is generated
   - Includes: originalFileName, thumbnailFileName, requestedSize, durationMs, format
+- `onDeleted(event)`: Fired when `deleteMediaWithVariants` completes
+  - Includes: fileName (original), deletedVariants (array of successfully deleted variant filenames)
+  - NOT fired by the simple `deleteMedia()` method
 
 **S3 Resilience** (NEW):
 - Automatic retry with exponential backoff on transient S3 errors
@@ -201,6 +204,10 @@ The service provides all media processing logic that consumers can use in custom
   - **Retry logic**: Uses exponential backoff for resilience
   - `skipPreGeneration`: Internal flag to prevent recursion during variant uploads
 - `deleteMedia(fileName)`: Removes object from S3 (with retry logic)
+- `deleteMediaWithVariants(fileName)`: Deletes original + all S3 variants (resized images, video thumbnails)
+  - Discovers variants via S3 listing with prefix `{baseName}-`, filtered by regex `{baseName}-{size}.{ext}` / `{baseName}-thumb-{size}.{ext}`
+  - Per-variant errors logged as warnings, never thrown
+  - Fires `onDeleted` hook with `{ fileName, deletedVariants }`
 
 **Key Implementation Details**:
 - All caching, ETag, and resize logic is in the SERVICE
@@ -213,7 +220,7 @@ The service provides all media processing logic that consumers can use in custom
 - Streaming for original media (97% memory reduction)
 - HTTP caching with ETags (99% bandwidth savings)
 - S3 operations protected with automatic retry on transient errors (NEW)
-- Event hooks for observability (onImageResized, onCacheHit, onUploaded) (NEW)
+- Event hooks for observability (onImageResized, onCacheHit, onUploaded, onVideoThumbnailGenerated, onDeleted) (NEW)
 - S3 metadata enriched for images (width, height, MIME, upload date) (NEW)
 - **Pre-generation workflow** (NEW):
   1. Original file uploaded to S3
@@ -346,7 +353,7 @@ Exports all public APIs:
 - `MediasService` - Service for direct use (primary export)
 - `MediasController` - Optional controller (opt-in via registerController)
 - DTOs - For custom controllers (recommended usage)
-- Interfaces - For configuration
+- Interfaces - For configuration (includes event interfaces: `ImageResizedEvent`, `CacheHitEvent`, `FileUploadedEvent`, `VideoThumbnailGeneratedEvent`, `ProcessingCompletedEvent`, `MediaDeletedEvent`)
 - Constants - Injection tokens, MIME types, extension lists
 
 ### Dependencies
