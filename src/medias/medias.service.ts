@@ -431,7 +431,7 @@ export class MediasService {
         await this.storage.deleteFile(variant);
         deletedVariants.push(variant);
       } catch (error) {
-        this.logger.warn('Variant file not found during cascade delete, skipping', {
+        this.logger.warn('Failed to delete variant during cascade delete, skipping', {
           variant,
           error: error instanceof Error ? error.message : 'Unknown error',
         });

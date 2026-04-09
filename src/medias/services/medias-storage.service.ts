@@ -118,10 +118,7 @@ export class MediasStorageService {
   async getFileStreamPartial(fileName: string, offset: number, length: number): Promise<Readable> {
     this.logger.verbose('Fetching partial file stream from S3', { fileName, offset, length });
     try {
-      const stream = await this.withRetry(
-        () => this.minioService.client.getPartialObject(this.getBucketName(), fileName, offset, length) as Promise<Readable>,
-        { operationName: 'getPartialObject', fileName },
-      );
+      const stream = await this.withRetry(() => this.minioService.client.getPartialObject(this.getBucketName(), fileName, offset, length) as Promise<Readable>, { operationName: 'getPartialObject', fileName });
       this.logger.verbose('Partial file stream obtained', { fileName, offset, length });
       return stream;
     } catch (error) {
@@ -189,20 +186,24 @@ export class MediasStorageService {
 
   async listFiles(prefix: string): Promise<string[]> {
     this.logger.verbose('Listing files from S3', { prefix });
-    const stream = this.minioService.client.listObjects(this.getBucketName(), prefix, true);
-    return new Promise((resolve, reject) => {
-      const files: string[] = [];
-      stream.on('data', (item: { name?: string }) => {
-        if (item.name) files.push(item.name);
-      });
-      stream.on('end', () => {
-        this.logger.verbose('Files listed from S3', { prefix, count: files.length });
-        resolve(files);
-      });
-      stream.on('error', (error: Error) => {
-        this.logger.error('Failed to list files from S3', { prefix, error: error.message });
-        reject(error);
-      });
-    });
+    return this.withRetry(
+      () =>
+        new Promise<string[]>((resolve, reject) => {
+          const stream = this.minioService.client.listObjects(this.getBucketName(), prefix, true);
+          const files: string[] = [];
+          stream.on('data', (item: { name?: string }) => {
+            if (item.name) files.push(item.name);
+          });
+          stream.on('end', () => {
+            this.logger.verbose('Files listed from S3', { prefix, count: files.length });
+            resolve(files);
+          });
+          stream.on('error', (error: Error) => {
+            this.logger.error('Failed to list files from S3', { prefix, error: error.message });
+            reject(error);
+          });
+        }),
+      { operationName: 'listObjects', fileName: prefix },
+    );
   }
 }
