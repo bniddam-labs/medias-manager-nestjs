@@ -581,14 +581,7 @@ describe('MediasService', () => {
   describe('deleteMediaWithVariants', () => {
     it('should delete original file and its variants', async () => {
       mockMinioClient.removeObject.mockResolvedValue({});
-      mockMinioClient.listObjects.mockReturnValue(
-        createMockListStream([
-          { name: 'photo-300.webp' },
-          { name: 'photo-800.jpg' },
-          { name: 'photo-thumb-400.webp' },
-          { name: 'photo-unrelated.webp' },
-        ]),
-      );
+      mockMinioClient.listObjects.mockReturnValue(createMockListStream([{ name: 'photo-300.webp' }, { name: 'photo-800.jpg' }, { name: 'photo-thumb-400.webp' }, { name: 'photo-unrelated.webp' }]));
 
       await service.deleteMediaWithVariants('photo.jpg');
 
@@ -596,6 +589,99 @@ describe('MediasService', () => {
       expect(mockMinioClient.removeObject).toHaveBeenCalledWith('test-bucket', 'photo-300.webp');
       expect(mockMinioClient.removeObject).toHaveBeenCalledWith('test-bucket', 'photo-800.jpg');
       expect(mockMinioClient.removeObject).not.toHaveBeenCalledWith('test-bucket', 'photo-unrelated.webp');
+    });
+
+    it('should handle video thumbnails naming convention', async () => {
+      mockMinioClient.removeObject.mockResolvedValue({});
+      mockMinioClient.listObjects.mockReturnValue(
+        createMockListStream([
+          { name: 'videos/clip-thumb-200.webp' },
+          { name: 'videos/clip-thumb-800.webp' },
+        ]),
+      );
+
+      await service.deleteMediaWithVariants('videos/clip.mp4');
+
+      expect(mockMinioClient.removeObject).toHaveBeenCalledWith('test-bucket', 'videos/clip.mp4');
+      expect(mockMinioClient.removeObject).toHaveBeenCalledWith('test-bucket', 'videos/clip-thumb-200.webp');
+      expect(mockMinioClient.removeObject).toHaveBeenCalledWith('test-bucket', 'videos/clip-thumb-800.webp');
+    });
+
+    it('should log a warning when a variant deletion fails', async () => {
+      mockMinioClient.removeObject
+        .mockResolvedValueOnce({}) // original
+        .mockRejectedValueOnce(new Error('Not Found')); // variant fails
+      mockMinioClient.listObjects.mockReturnValue(
+        createMockListStream([{ name: 'photo-300.webp' }]),
+      );
+
+      await service.deleteMediaWithVariants('photo.jpg');
+
+      // Should not throw — deletion of original succeeded
+      expect(mockMinioClient.removeObject).toHaveBeenCalledWith('test-bucket', 'photo.jpg');
+    });
+
+    it('should fire onDeleted hook with deleted variants list', async () => {
+      const onDeleted = jest.fn();
+      // Rebuild module with onDeleted option
+      const moduleWithHook = await Test.createTestingModule({
+        providers: [
+          MediasService,
+          MediasLoggerService,
+          MediasStorageService,
+          MediasValidationService,
+          MediasResizeService,
+          MediasVideoService,
+          { provide: MinioService, useValue: { client: mockMinioClient } },
+          { provide: MEDIAS_MODULE_OPTIONS, useValue: { ...mockOptions, onDeleted } },
+        ],
+      }).compile();
+      const serviceWithHook = moduleWithHook.get<MediasService>(MediasService);
+
+      mockMinioClient.removeObject.mockResolvedValue({});
+      mockMinioClient.listObjects.mockReturnValue(
+        createMockListStream([{ name: 'photo-400.webp' }]),
+      );
+
+      await serviceWithHook.deleteMediaWithVariants('photo.jpg');
+
+      expect(onDeleted).toHaveBeenCalledWith({
+        fileName: 'photo.jpg',
+        deletedVariants: ['photo-400.webp'],
+      });
+    });
+
+    it('should not include unmatched files in deletedVariants', async () => {
+      const onDeleted = jest.fn();
+      const moduleWithHook = await Test.createTestingModule({
+        providers: [
+          MediasService,
+          MediasLoggerService,
+          MediasStorageService,
+          MediasValidationService,
+          MediasResizeService,
+          MediasVideoService,
+          { provide: MinioService, useValue: { client: mockMinioClient } },
+          { provide: MEDIAS_MODULE_OPTIONS, useValue: { ...mockOptions, onDeleted } },
+        ],
+      }).compile();
+      const serviceWithHook = moduleWithHook.get<MediasService>(MediasService);
+
+      mockMinioClient.removeObject.mockResolvedValue({});
+      mockMinioClient.listObjects.mockReturnValue(
+        createMockListStream([
+          { name: 'photo-300.webp' },    // valid variant
+          { name: 'photo-other.webp' },  // not a variant (no numeric size)
+        ]),
+      );
+
+      await serviceWithHook.deleteMediaWithVariants('photo.jpg');
+
+      expect(onDeleted).toHaveBeenCalledWith({
+        fileName: 'photo.jpg',
+        deletedVariants: ['photo-300.webp'],
+      });
+      expect(mockMinioClient.removeObject).not.toHaveBeenCalledWith('test-bucket', 'photo-other.webp');
     });
   });
 

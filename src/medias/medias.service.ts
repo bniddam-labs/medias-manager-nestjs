@@ -405,6 +405,44 @@ export class MediasService {
     return this.storage.deleteFile(fileName);
   }
 
+  /**
+   * Delete a media file and all its S3 variants (resized images, video thumbnails).
+   *
+   * Variants are discovered via S3 listing with prefix `{baseName}-` and filtered
+   * by the naming convention `{baseName}-{size}.{ext}` or `{baseName}-thumb-{size}.{ext}`.
+   * Fires the `onDeleted` hook with the list of successfully deleted variants.
+   */
+  async deleteMediaWithVariants(fileName: string): Promise<void> {
+    await this.deleteMedia(fileName);
+
+    const lastDot = fileName.lastIndexOf('.');
+    const baseName = lastDot !== -1 ? fileName.slice(0, lastDot) : fileName;
+    const prefix = `${baseName}-`;
+
+    const candidates = await this.storage.listFiles(prefix);
+
+    const escapedBaseName = baseName.replace(/[.[\]{}()*+?\\^$|#]/g, '\\$&');
+    const variantRegex = new RegExp(`^${escapedBaseName}(-\\d+|-thumb-\\d+)\\.\\w+$`);
+    const variants = candidates.filter((name) => variantRegex.test(name));
+
+    const deletedVariants: string[] = [];
+    for (const variant of variants) {
+      try {
+        await this.storage.deleteFile(variant);
+        deletedVariants.push(variant);
+      } catch (error) {
+        this.logger.warn('Variant file not found during cascade delete, skipping', {
+          variant,
+          error: error instanceof Error ? error.message : 'Unknown error',
+        });
+      }
+    }
+
+    if (this.options.onDeleted) {
+      this.options.onDeleted({ fileName, deletedVariants });
+    }
+  }
+
   // ============================================
   // Image Operations (delegated to resize service)
   // ============================================
