@@ -11,6 +11,7 @@ export type {
   CacheHitEvent,
   FileUploadedEvent,
   ImageResizedEvent,
+  MediaDeletedEvent,
   MediasLogLevel,
   MediasModuleAsyncOptions,
   MediasModuleOptions,
