@@ -102,6 +102,16 @@ export interface ProcessingCompletedEvent {
 }
 
 /**
+ * Event fired when a file and its variants are deleted
+ */
+export interface MediaDeletedEvent {
+  /** Original file that was deleted */
+  fileName: string;
+  /** Variant files that were successfully deleted */
+  deletedVariants: string[];
+}
+
+/**
  * Pre-generation job for image variants
  */
 export interface PreGenerateJob {
@@ -412,6 +422,13 @@ export interface MediasModuleOptions {
    * ```
    */
   onProcessingCompleted?: (event: ProcessingCompletedEvent) => void;
+
+  /**
+   * Optional: Callback fired when a file and its variants are deleted via deleteMediaWithVariants.
+   *
+   * Not fired by the simple deleteMedia() method.
+   */
+  onDeleted?: (event: MediaDeletedEvent) => void;
 
   /**
    * Optional: Enable strict filename validation using whitelist (default: true)
