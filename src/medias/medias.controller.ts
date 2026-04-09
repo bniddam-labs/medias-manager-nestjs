@@ -1,4 +1,3 @@
-
 import { BadRequestException, Controller, Delete, Get, InternalServerErrorException, Logger, NotFoundException, Param, Query, Req, Res } from '@nestjs/common';
 import { Request, Response } from 'express';
 import { DeleteMediaParamsLooseDto } from './dto/delete-media.dto';
@@ -169,6 +168,6 @@ export class MediasController {
   @Delete('*fileName')
   async deleteMedia(@Param() params: DeleteMediaParamsLooseDto): Promise<void> {
     const fileName = Array.isArray(params.fileName) ? params.fileName.join('/') : params.fileName;
-    return this.mediasService.deleteMedia(fileName);
+    return this.mediasService.deleteMediaWithVariants(fileName);
   }
 }

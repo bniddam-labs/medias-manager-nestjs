@@ -31,7 +31,7 @@ describe('MediasController', () => {
       getMediaStream: jest.fn(),
       getResizedImage: jest.fn(),
       getVideoThumbnail: jest.fn(),
-      deleteMedia: jest.fn(),
+      deleteMediaWithVariants: jest.fn(),
       negotiateFormat: jest.fn().mockReturnValue('original'),
     };
 
@@ -180,20 +180,20 @@ describe('MediasController', () => {
   });
 
   describe('deleteMedia', () => {
-    it('should delete media file', async () => {
-      mediasService.deleteMedia.mockResolvedValue(undefined);
+    it('should delete media file and its variants', async () => {
+      mediasService.deleteMediaWithVariants.mockResolvedValue(undefined);
 
       await controller.deleteMedia({ fileName: 'video.mp4' });
 
-      expect(mediasService.deleteMedia).toHaveBeenCalledWith('video.mp4');
+      expect(mediasService.deleteMediaWithVariants).toHaveBeenCalledWith('video.mp4');
     });
 
     it('should handle array fileName from wildcard route', async () => {
-      mediasService.deleteMedia.mockResolvedValue(undefined);
+      mediasService.deleteMediaWithVariants.mockResolvedValue(undefined);
 
       await controller.deleteMedia({ fileName: ['folder', 'video.mp4'] as any });
 
-      expect(mediasService.deleteMedia).toHaveBeenCalledWith('folder/video.mp4');
+      expect(mediasService.deleteMediaWithVariants).toHaveBeenCalledWith('folder/video.mp4');
     });
   });
 });
