@@ -127,15 +127,17 @@ export class MediasVideoService implements OnModuleInit {
   extractFrame(videoBuffer: Buffer, timestampSeconds: number): Promise<Buffer> {
     const tempPath = this.writeTempFile(videoBuffer);
 
-    return this.extractFrameAtTimestamp(tempPath, timestampSeconds).catch((error) => {
-      this.logger.warn('Frame extraction failed at requested timestamp, retrying at 0s', {
-        timestamp: timestampSeconds,
-        error: error instanceof Error ? error.message : 'Unknown error',
+    return this.extractFrameAtTimestamp(tempPath, timestampSeconds)
+      .catch((error) => {
+        this.logger.warn('Frame extraction failed at requested timestamp, retrying at 0s', {
+          timestamp: timestampSeconds,
+          error: error instanceof Error ? error.message : 'Unknown error',
+        });
+        return this.extractFrameAtTimestamp(tempPath, 0);
+      })
+      .finally(() => {
+        this.cleanupTempFile(tempPath);
       });
-      return this.extractFrameAtTimestamp(tempPath, 0);
-    }).finally(() => {
-      this.cleanupTempFile(tempPath);
-    });
   }
 
   private extractFrameAtTimestamp(filePath: string, timestampSeconds: number): Promise<Buffer> {
@@ -270,21 +272,24 @@ export class MediasVideoService implements OnModuleInit {
     const durationMs = Date.now() - startTime;
 
     // Cache to S3 (fire-and-forget)
-    this.storage.putFile(thumbnailFileName, thumbnailBuffer).then(() => {
-      this.logger.info('Video thumbnail cached to S3', { thumbnailFileName });
-      this.options.onVideoThumbnailGenerated?.({
-        originalFileName: fileName,
-        thumbnailFileName,
-        requestedSize: size,
-        durationMs,
-        format: outputFormat,
+    this.storage
+      .putFile(thumbnailFileName, thumbnailBuffer)
+      .then(() => {
+        this.logger.info('Video thumbnail cached to S3', { thumbnailFileName });
+        this.options.onVideoThumbnailGenerated?.({
+          originalFileName: fileName,
+          thumbnailFileName,
+          requestedSize: size,
+          durationMs,
+          format: outputFormat,
+        });
+      })
+      .catch((error: unknown) => {
+        this.logger.error('Failed to cache video thumbnail to S3', {
+          thumbnailFileName,
+          error: error instanceof Error ? error.message : 'Unknown error',
+        });
       });
-    }).catch((error: unknown) => {
-      this.logger.error('Failed to cache video thumbnail to S3', {
-        thumbnailFileName,
-        error: error instanceof Error ? error.message : 'Unknown error',
-      });
-    });
 
     const etag = this.validation.generateETagFromBuffer(thumbnailBuffer);
     this.logger.info('Video thumbnail generated on-the-fly', { fileName, size, thumbnailFileName, durationMs });

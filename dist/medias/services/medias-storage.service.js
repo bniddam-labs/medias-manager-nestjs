@@ -153,6 +153,25 @@ let MediasStorageService = class MediasStorageService {
         await this.withRetry(() => this.minioService.client.removeObject(this.getBucketName(), fileName), { operationName: 'removeObject', fileName });
         this.logger.info('File deleted from S3', { fileName });
     }
+    async listFiles(prefix) {
+        this.logger.verbose('Listing files from S3', { prefix });
+        return this.withRetry(() => new Promise((resolve, reject) => {
+            const stream = this.minioService.client.listObjects(this.getBucketName(), prefix, true);
+            const files = [];
+            stream.on('data', (item) => {
+                if (item.name)
+                    files.push(item.name);
+            });
+            stream.on('end', () => {
+                this.logger.verbose('Files listed from S3', { prefix, count: files.length });
+                resolve(files);
+            });
+            stream.on('error', (error) => {
+                this.logger.error('Failed to list files from S3', { prefix, error: error.message });
+                reject(error);
+            });
+        }), { operationName: 'listObjects', fileName: prefix });
+    }
 };
 exports.MediasStorageService = MediasStorageService;
 exports.MediasStorageService = MediasStorageService = __decorate([

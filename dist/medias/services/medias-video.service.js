@@ -137,13 +137,15 @@ let MediasVideoService = class MediasVideoService {
     }
     extractFrame(videoBuffer, timestampSeconds) {
         const tempPath = this.writeTempFile(videoBuffer);
-        return this.extractFrameAtTimestamp(tempPath, timestampSeconds).catch((error) => {
+        return this.extractFrameAtTimestamp(tempPath, timestampSeconds)
+            .catch((error) => {
             this.logger.warn('Frame extraction failed at requested timestamp, retrying at 0s', {
                 timestamp: timestampSeconds,
                 error: error instanceof Error ? error.message : 'Unknown error',
             });
             return this.extractFrameAtTimestamp(tempPath, 0);
-        }).finally(() => {
+        })
+            .finally(() => {
             this.cleanupTempFile(tempPath);
         });
     }
@@ -248,7 +250,9 @@ let MediasVideoService = class MediasVideoService {
         pipeline = this.applyFormat(pipeline, outputFormat);
         const thumbnailBuffer = await pipeline.toBuffer();
         const durationMs = Date.now() - startTime;
-        this.storage.putFile(thumbnailFileName, thumbnailBuffer).then(() => {
+        this.storage
+            .putFile(thumbnailFileName, thumbnailBuffer)
+            .then(() => {
             this.logger.info('Video thumbnail cached to S3', { thumbnailFileName });
             this.options.onVideoThumbnailGenerated?.({
                 originalFileName: fileName,
@@ -257,7 +261,8 @@ let MediasVideoService = class MediasVideoService {
                 durationMs,
                 format: outputFormat,
             });
-        }).catch((error) => {
+        })
+            .catch((error) => {
             this.logger.error('Failed to cache video thumbnail to S3', {
                 thumbnailFileName,
                 error: error instanceof Error ? error.message : 'Unknown error',

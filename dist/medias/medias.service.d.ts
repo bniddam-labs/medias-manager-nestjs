@@ -35,6 +35,7 @@ export declare class MediasService {
     private triggerVideoThumbnailGeneration;
     getVideoThumbnail(fileName: string, size: number, ifNoneMatch?: string): Promise<MediaBufferResponse>;
     deleteMedia(fileName: string): Promise<void>;
+    deleteMediaWithVariants(fileName: string): Promise<void>;
     getImageStream(fileName: string, ifNoneMatch?: string): Promise<MediaStreamResponse>;
     getResizedImage(fileName: string, size: number, ifNoneMatch?: string, format?: ImageFormat): Promise<MediaBufferResponse>;
     getResizedImageStream(fileName: string, size: number, ifNoneMatch?: string, format?: ImageFormat): Promise<MediaStreamResponse>;

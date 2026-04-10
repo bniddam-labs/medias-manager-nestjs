@@ -45,6 +45,10 @@ export interface ProcessingCompletedEvent {
     generatedFiles: string[];
     totalDurationMs: number;
 }
+export interface MediaDeletedEvent {
+    fileName: string;
+    deletedVariants: string[];
+}
 export interface PreGenerateJob {
     fileName: string;
     sizes: number[];
@@ -83,6 +87,7 @@ export interface MediasModuleOptions {
     videoThumbnails?: VideoThumbnailOptions;
     onVideoThumbnailGenerated?: (event: VideoThumbnailGeneratedEvent) => void;
     onProcessingCompleted?: (event: ProcessingCompletedEvent) => void;
+    onDeleted?: (event: MediaDeletedEvent) => void;
     strictFilenameValidation?: boolean;
 }
 export interface MediasModuleOptionsFactory {

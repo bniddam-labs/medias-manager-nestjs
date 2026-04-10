@@ -147,7 +147,7 @@ let MediasController = MediasController_1 = class MediasController {
     }
     async deleteMedia(params) {
         const fileName = Array.isArray(params.fileName) ? params.fileName.join('/') : params.fileName;
-        return this.mediasService.deleteMedia(fileName);
+        return this.mediasService.deleteMediaWithVariants(fileName);
     }
 };
 exports.MediasController = MediasController;

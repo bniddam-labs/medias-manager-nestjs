@@ -26,5 +26,6 @@ export declare class MediasStorageService {
     getFileStat(fileName: string): Promise<MediaStatResult>;
     putFile(fileName: string, file: Buffer, metadata?: Record<string, string>): Promise<void>;
     deleteFile(fileName: string): Promise<void>;
+    listFiles(prefix: string): Promise<string[]>;
 }
 //# sourceMappingURL=medias-storage.service.d.ts.map

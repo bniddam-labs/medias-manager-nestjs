@@ -88,9 +88,7 @@ describe('MediasVideoService', () => {
           provide: MediasValidationService,
           useValue: {
             isVideo: jest.fn().mockReturnValue(true),
-            buildThumbnailFileName: jest.fn().mockImplementation(
-              (fileName: string, size: number, ext: string) => `${fileName.replace(/\.[^.]+$/, '')}-thumb-${size}${ext}`,
-            ),
+            buildThumbnailFileName: jest.fn().mockImplementation((fileName: string, size: number, ext: string) => `${fileName.replace(/\.[^.]+$/, '')}-thumb-${size}${ext}`),
           },
         },
         {

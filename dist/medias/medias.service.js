@@ -267,6 +267,30 @@ let MediasService = class MediasService {
     async deleteMedia(fileName) {
         return this.storage.deleteFile(fileName);
     }
+    async deleteMediaWithVariants(fileName) {
+        await this.deleteMedia(fileName);
+        const lastDot = fileName.lastIndexOf('.');
+        const baseName = lastDot !== -1 ? fileName.slice(0, lastDot) : fileName;
+        const prefix = `${baseName}-`;
+        const candidates = await this.storage.listFiles(prefix);
+        const escapedBaseName = baseName.replace(/[.[\]{}()*+?\\^$|#]/g, '\\$&');
+        const variantRegex = new RegExp(`^${escapedBaseName}(-\\d+|-thumb-\\d+)\\.\\w+$`);
+        const variants = candidates.filter((name) => variantRegex.test(name));
+        const deletedVariants = [];
+        for (const variant of variants) {
+            try {
+                await this.storage.deleteFile(variant);
+                deletedVariants.push(variant);
+            }
+            catch (error) {
+                this.logger.warn('Failed to delete variant during cascade delete, skipping', {
+                    variant,
+                    error: error instanceof Error ? error.message : 'Unknown error',
+                });
+            }
+        }
+        this.options.onDeleted?.({ fileName, deletedVariants });
+    }
     async getImageStream(fileName, ifNoneMatch) {
         this.logger.verbose('getImageStream called', { fileName });
         if (!this.validation.isImage(fileName)) {
